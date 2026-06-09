@@ -1,0 +1,38 @@
+[package]
+name        = "contextflow-speech-engine"
+version     = { workspace = true }
+edition     = { workspace = true }
+rust-version = { workspace = true }
+authors     = { workspace = true }
+license     = { workspace = true }
+repository  = { workspace = true }
+description = "SpeechProvider trait and concrete speech engines (Windows SR, whisper.cpp, faster-whisper, Deepgram, OpenAI Realtime)."
+
+[lints]
+workspace = true
+
+[features]
+# Default to no concrete providers: the trait is the public contract and
+# every backend is feature-gated. The desktop app enables the providers
+# it needs in its own Cargo.toml.
+default = []
+provider-windows         = ["dep:windows"] # Slice 1, in progress
+provider-whisper-cpp     = []              # Slice 2
+provider-faster-whisper  = []              # Slice 2
+provider-deepgram        = []              # Slice 4
+provider-openai-realtime = []              # Slice 4
+
+[dependencies]
+async-trait = { workspace = true }
+futures     = { workspace = true }
+serde       = { workspace = true }
+thiserror   = { workspace = true }
+tokio       = { workspace = true }
+tokio-stream = { workspace = true }
+tracing     = { workspace = true }
+
+# Windows provider deps — only pulled in when the feature is on.
+windows = { workspace = true, optional = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt-multi-thread", "test-util"] }

@@ -1,0 +1,117 @@
+[workspace]
+resolver = "2"
+members = [
+    # apps/desktop/src-tauri is added in the Tauri-scaffold commit once
+    # `pnpm create tauri-app` has produced the real shell.
+    "core/audio-engine",
+    "core/speech-engine",
+    "core/text-injection",
+    "core/dictation-engine",
+    "core/context-engine",
+    "core/ai-engine",
+    "core/hotkey",
+    "core/settings",
+    "core/telemetry",
+    "crates/ipc-contracts",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.80"
+authors = ["ContextFlow Contributors"]
+license = "Apache-2.0"
+repository = "https://github.com/your-org/contextflow"
+homepage = "https://contextflow.dev"
+
+[workspace.dependencies]
+# Async runtime
+tokio        = { version = "1.40", features = ["full"] }
+tokio-stream = "0.1"
+futures      = "0.3"
+async-trait  = "0.1"
+
+# Errors / logging
+thiserror = "1.0"
+anyhow    = "1.0"
+tracing   = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json", "fmt"] }
+tracing-appender   = "0.2"
+
+# Serialization
+serde      = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Audio
+cpal       = "0.15"
+rubato     = "0.15"
+webrtc-vad = "0.4"
+rtrb       = "0.3"
+
+# Windows APIs — feature-gated within crates that need them.
+windows = { version = "0.58", features = [
+    "Foundation",
+    "Foundation_Collections",
+    "Media",
+    "Media_Capture",
+    "Media_SpeechRecognition",
+    "Win32_Foundation",
+    "Win32_UI_Input_KeyboardAndMouse",
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_System_Threading",
+    "Win32_System_LibraryLoader",
+    "Win32_UI_Accessibility",
+    "Win32_System_Com",
+    "Win32_System_DataExchange",
+    "Win32_System_Memory",
+] }
+
+# Global hotkey
+global-hotkey = "0.6"
+
+# IPC type generation
+specta            = { version = "2.0.0-rc.20", features = ["derive"] }
+specta-typescript = "0.0.7"
+
+# Internal crates
+contextflow-audio-engine     = { path = "core/audio-engine" }
+contextflow-speech-engine    = { path = "core/speech-engine" }
+contextflow-text-injection   = { path = "core/text-injection" }
+contextflow-dictation-engine = { path = "core/dictation-engine" }
+contextflow-context-engine   = { path = "core/context-engine" }
+contextflow-ai-engine        = { path = "core/ai-engine" }
+contextflow-hotkey           = { path = "core/hotkey" }
+contextflow-settings         = { path = "core/settings" }
+contextflow-telemetry        = { path = "core/telemetry" }
+contextflow-ipc-contracts    = { path = "crates/ipc-contracts" }
+
+[workspace.lints.rust]
+unsafe_op_in_unsafe_fn        = "warn"
+unreachable_pub               = "warn"
+missing_debug_implementations = "warn"
+
+[workspace.lints.clippy]
+all      = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+# Pedantic lints we explicitly opt out of — too noisy for application code.
+module_name_repetitions  = "allow"
+must_use_candidate       = "allow"
+missing_errors_doc       = "allow"
+missing_panics_doc       = "allow"
+needless_pass_by_value   = "allow"
+similar_names            = "allow"
+too_many_lines           = "allow"
+cast_precision_loss      = "allow"
+cast_possible_truncation = "allow"
+cast_sign_loss           = "allow"
+
+[profile.dev]
+opt-level = 1   # cpal + audio is unusably slow at opt-level 0
+debug     = true
+
+[profile.release]
+opt-level     = 3
+lto           = "thin"
+codegen-units = 1
+strip         = "symbols"
+panic         = "abort"

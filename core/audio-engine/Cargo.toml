@@ -1,0 +1,22 @@
+[package]
+name        = "contextflow-audio-engine"
+version     = { workspace = true }
+edition     = { workspace = true }
+rust-version = { workspace = true }
+authors     = { workspace = true }
+license     = { workspace = true }
+repository  = { workspace = true }
+description = "Microphone capture, resampling, VAD, and ring buffer for ContextFlow."
+
+[lints]
+workspace = true
+
+[dependencies]
+async-trait = { workspace = true }
+serde       = { workspace = true }
+thiserror   = { workspace = true }
+tokio       = { workspace = true }
+tracing     = { workspace = true }
+
+# Slice 1 will introduce: cpal, rubato, webrtc-vad, rtrb.
+# Added in their own commit once the toolchain is ready.

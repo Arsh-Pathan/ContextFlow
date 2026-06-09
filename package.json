@@ -1,0 +1,20 @@
+{
+  "name": "contextflow",
+  "private": true,
+  "version": "0.1.0",
+  "description": "ContextFlow — Windows-native AI voice dictation.",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  },
+  "scripts": {
+    "tauri": "pnpm --filter ./apps/desktop tauri",
+    "dev": "pnpm --filter ./apps/desktop dev",
+    "build": "pnpm --filter ./apps/desktop build",
+    "lint": "pnpm --recursive --if-present run lint",
+    "typecheck": "pnpm --recursive --if-present run typecheck",
+    "test": "pnpm --recursive --if-present run test"
+  },
+  "packageManager": "pnpm@9.12.0"
+}

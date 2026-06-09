@@ -1,0 +1,24 @@
+[package]
+name        = "contextflow-dictation-engine"
+version     = { workspace = true }
+edition     = { workspace = true }
+rust-version = { workspace = true }
+authors     = { workspace = true }
+license     = { workspace = true }
+repository  = { workspace = true }
+description = "Dictation session orchestrator: hotkey → audio → speech → injection."
+
+[lints]
+workspace = true
+
+[dependencies]
+async-trait = { workspace = true }
+futures     = { workspace = true }
+serde       = { workspace = true }
+thiserror   = { workspace = true }
+tokio       = { workspace = true }
+tracing     = { workspace = true }
+
+contextflow-audio-engine    = { workspace = true }
+contextflow-speech-engine   = { workspace = true }
+contextflow-text-injection  = { workspace = true }

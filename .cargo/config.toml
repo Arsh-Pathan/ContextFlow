@@ -1,0 +1,17 @@
+# Workspace-wide cargo config.
+#
+# We default to the MSVC toolchain on Windows. The `rust-lld` linker is faster
+# than link.exe, but Tauri's bundler currently expects MSVC link, so we leave
+# the default for now and revisit in Slice 6 when we benchmark builds.
+
+[build]
+# Keep target dir at workspace root so all crates share artifacts.
+# (default behavior; explicit for readability)
+
+[term]
+verbose = false
+color = "auto"
+
+# Faster incremental builds on Windows by caching dep-info hashes.
+[env]
+CARGO_INCREMENTAL = "1"

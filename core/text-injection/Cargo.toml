@@ -1,0 +1,21 @@
+[package]
+name        = "contextflow-text-injection"
+version     = { workspace = true }
+edition     = { workspace = true }
+rust-version = { workspace = true }
+authors     = { workspace = true }
+license     = { workspace = true }
+repository  = { workspace = true }
+description = "UIA / SendInput / clipboard text-injection strategies for Windows."
+
+[lints]
+workspace = true
+
+[dependencies]
+async-trait = { workspace = true }
+serde       = { workspace = true }
+thiserror   = { workspace = true }
+tracing     = { workspace = true }
+
+# Slice 1: SendInput Unicode via `windows` crate. Slice 3: UIA.
+# Wired once toolchain is ready.

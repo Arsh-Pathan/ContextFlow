@@ -40,7 +40,7 @@ export function Bubble({ status, level, message }: BubbleProps) {
       const distanceToCenter = Math.abs((numDots - 1) / 2 - i);
       const curve = 1 - (distanceToCenter / ((numDots - 1) / 2)) * 0.3;
       
-      const baseGain = level * 100;
+      const baseGain = level * 25;
       // Cap scaleY to 2.5 so the 8px dot doesn't exceed 20-24px total height 
       // (which keeps it safely inside the 44px window)
       scaleY = 1 + Math.min(2.5, baseGain * curve * dynamicIntensity);
@@ -60,7 +60,7 @@ export function Bubble({ status, level, message }: BubbleProps) {
     }
       
     const dotStyle: CSSProperties = {
-      transform: status === "listening" ? `scaleY(${scaleY})` : `scaleY(1) translateY(${translateY}px)`,
+      transform: status === "listening" ? `scaleY(${scaleY})` : undefined,
       animation: animation,
     };
 
@@ -118,7 +118,7 @@ export function Bubble({ status, level, message }: BubbleProps) {
       role="status"
       aria-label={ariaLabel}
       title={status === "error" && message ? message : STATUS_LABEL[status]}
-      className={`w-full h-full flex items-center justify-between px-3 rounded-[22px] bg-[#1a1a1a] border-2 transition-colors duration-300 overflow-hidden ${borderClass} ${shadowClass}`}
+      className={`w-[180px] h-[44px] flex items-center justify-between px-3 rounded-[22px] bg-[#1a1a1a] border-2 transition-colors duration-300 overflow-hidden ${borderClass} ${shadowClass}`}
       data-status={status}
     >
       <style>{`

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./media/banner.png" width="100%" alt="ContextFlow — Your thoughts, in flow.">
+  <img src="./media/banner.svg" width="100%" alt="ContextFlow — Your thoughts, in flow.">
 </p>
 
 <p align="center">

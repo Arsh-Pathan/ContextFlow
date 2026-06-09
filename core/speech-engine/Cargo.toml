@@ -35,7 +35,7 @@ tracing     = { workspace = true }
 windows = { workspace = true, optional = true }
 
 # Whisper.cpp provider deps
-whisper-rs = { workspace = true, optional = true, features = ["cuda"] }
+whisper-rs = { workspace = true, optional = true }
 
 [dev-dependencies]
 tokio                 = { workspace = true, features = ["macros", "rt-multi-thread", "test-util"] }

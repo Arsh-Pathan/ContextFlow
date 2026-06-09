@@ -123,16 +123,18 @@ async fn start_dictation_engine<R: tauri::Runtime>(
     };
     
     // Fall back to WindowsSpeechProvider if Whisper initialization fails (e.g. missing model)
+    info!(model = ?model_path, "initializing dictation provider");
     let provider: Arc<dyn contextflow_speech_engine::SpeechProvider> = match WhisperCppProvider::new(model_path) {
         Ok(p) => {
             info!("Successfully initialized WhisperCppProvider");
             Arc::new(p)
         }
         Err(e) => {
-            error!("Failed to initialize WhisperCppProvider: {e}. Falling back to WindowsSpeechProvider.");
+            error!(?e, "Failed to initialize WhisperCppProvider; falling back to WindowsSpeechProvider");
             Arc::new(contextflow_speech_engine::providers::windows_sr::WindowsSpeechProvider::new())
         }
     };
+    info!(provider_id = provider.id(), "dictation provider selected");
     
     let injector = Arc::new(SendInputInjector::new());
 

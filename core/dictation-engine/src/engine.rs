@@ -33,7 +33,9 @@ use crate::error::DictationError;
 /// past that and still well under "the user reaches for the mouse".
 // 1.5s was too aggressive for Windows SR which can take up to 4-5s to finalize
 // transcripts especially if it is using the cloud or there is background noise.
-const FINAL_TIMEOUT: Duration = Duration::from_millis(5000);
+// 5s was too short for the WhisperCppProvider — CPU inference on the 488 MB
+// ggml-small.en model can take 10-30+ seconds for a typical utterance.
+const FINAL_TIMEOUT: Duration = Duration::from_secs(60);
 
 /// Rate at which we re-emit `Listening { level }` events so the bubble
 /// pulse looks lively without flooding Tauri's event channel.

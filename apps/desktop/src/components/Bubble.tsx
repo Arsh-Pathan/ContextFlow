@@ -28,40 +28,50 @@ export function Bubble({ status, level, message }: BubbleProps) {
   const dots = Array.from({ length: numDots }).map((_, i) => {
     // Determine dynamic scale for audio reactivity
     let scaleY = 1;
+    let translateY = 0;
+    
+    // Very reactive audio profile
     if (status === "listening" && level !== undefined) {
-      // Create a smooth, organic audio reactivity profile across the dots
-      // The middle dots will react more strongly than the outer dots
       const distanceToCenter = Math.abs((numDots - 1) / 2 - i);
       const intensity = 1 - (distanceToCenter / ((numDots - 1) / 2)) * 0.4;
-      const baseGain = level * 4;
-      
-      scaleY = 1 + Math.min(1.5, baseGain * intensity);
+      const baseGain = level * 10;
+      scaleY = 1 + Math.min(3.5, baseGain * intensity);
     }
 
-    // Delay for processing wave animation
-    const delay = `${i * 100}ms`;
+    const delayMs = i * 100;
+    const delay = `${delayMs}ms`;
     
-    // For processing state, we use an inline CSS animation to create a wave
-    const processingAnimation = status === "processing" 
-      ? `pulse-wave 1s ease-in-out ${delay} infinite`
-      : 'none';
+    // Determine the animation based on state
+    let animation = 'none';
+    if (status === "processing") {
+      animation = `processing-bounce 0.8s ease-in-out ${delay} infinite`;
+    } else if (status === "idle") {
+      animation = `idle-breathe 2s ease-in-out ${delayMs * 2}ms infinite`;
+    } else if (status === "error") {
+      animation = `error-shake 0.4s ease-in-out ${delay} infinite`;
+    }
       
-    // Combine inline styles
     const dotStyle: CSSProperties = {
-      transform: status === "listening" ? `scaleY(${scaleY})` : 'scaleY(1)',
-      animation: processingAnimation,
+      transform: status === "listening" ? `scaleY(${scaleY})` : `scaleY(1) translateY(${translateY}px)`,
+      animation: animation,
     };
+
+    // Use a fast transition for listening so it feels snappy and reactive,
+    // but a slower transition for other state changes.
+    const transitionClass = status === "listening" 
+      ? "transition-transform duration-75 ease-out" 
+      : "transition-all duration-300 ease-in-out";
 
     return (
       <div
         key={i}
-        className={`w-1.5 rounded-full transition-all duration-300 ease-in-out origin-center ${
+        className={`w-1.5 rounded-full origin-center ${transitionClass} ${
           status === "processing" 
             ? "h-1.5 bg-sky-400" 
             : status === "error"
               ? "h-1.5 bg-rose-500"
               : status === "listening"
-                ? "h-2 bg-white"
+                ? "h-2 bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)]"
                 : "h-1.5 bg-gray-500"
         }`}
         style={dotStyle}
@@ -86,9 +96,18 @@ export function Bubble({ status, level, message }: BubbleProps) {
       data-status={status}
     >
       <style>{`
-        @keyframes pulse-wave {
-          0%, 100% { transform: scaleY(1); opacity: 0.5; }
-          50% { transform: scaleY(2.5); opacity: 1; }
+        @keyframes processing-bounce {
+          0%, 100% { transform: translateY(0) scale(1); opacity: 0.4; }
+          50% { transform: translateY(-4px) scale(1.2); opacity: 1; }
+        }
+        @keyframes idle-breathe {
+          0%, 100% { opacity: 0.3; transform: scale(1); }
+          50% { opacity: 0.7; transform: scale(1.1); }
+        }
+        @keyframes error-shake {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-2px); }
+          75% { transform: translateX(2px); }
         }
       `}</style>
       

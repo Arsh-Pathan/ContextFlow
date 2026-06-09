@@ -18,5 +18,16 @@ thiserror   = { workspace = true }
 tokio       = { workspace = true }
 tracing     = { workspace = true }
 
-# Slice 1 will introduce: cpal, rubato, webrtc-vad, rtrb.
-# Added in their own commit once the toolchain is ready.
+# Audio capture: `cpal` is the de facto Rust cross-platform audio crate;
+# on Windows it talks WASAPI.
+cpal       = { workspace = true }
+
+# Resampling from device-native rate (typically 44.1/48 kHz) → 16 kHz mono.
+rubato     = { workspace = true }
+
+# Voice Activity Detection: lightweight, battle-tested WebRTC VAD port.
+webrtc-vad = { workspace = true }
+
+[dev-dependencies]
+tokio                = { workspace = true, features = ["macros", "rt-multi-thread", "test-util"] }
+contextflow-telemetry = { workspace = true }

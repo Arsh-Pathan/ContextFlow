@@ -12,5 +12,8 @@ description = "Typed IPC contracts shared between the Rust shell and the React U
 workspace = true
 
 [dependencies]
-serde   = { workspace = true }
-specta  = { workspace = true }
+serde  = { workspace = true }
+specta = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }

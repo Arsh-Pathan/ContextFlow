@@ -384,6 +384,7 @@ name = "contextflow-desktop"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "contextflow-hotkey",
  "contextflow-ipc-contracts",
  "contextflow-telemetry",
  "serde",
@@ -415,6 +416,7 @@ name = "contextflow-hotkey"
 version = "0.1.0"
 dependencies = [
  "serde",
+ "serde_json",
  "thiserror 1.0.69",
  "tokio",
  "tracing",
@@ -425,6 +427,7 @@ name = "contextflow-ipc-contracts"
 version = "0.1.0"
 dependencies = [
  "serde",
+ "serde_json",
  "specta",
 ]
 

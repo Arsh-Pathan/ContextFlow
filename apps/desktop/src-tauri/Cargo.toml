@@ -34,6 +34,7 @@ tracing      = { workspace = true }
 # Internal crates
 contextflow-telemetry     = { workspace = true }
 contextflow-ipc-contracts = { workspace = true }
+contextflow-hotkey        = { workspace = true }
 
 [features]
 # Tauri's default custom-protocol feature is enabled for release builds by the CLI.

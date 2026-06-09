@@ -1,10 +1,18 @@
-//! ContextFlow global hotkey manager.
+//! ContextFlow hotkey types and event bus.
 //!
-//! Registers a single system-wide push-to-talk hotkey (default `Ctrl+Space`)
-//! via the `global-hotkey` crate, and supplements it with a low-level
-//! keyboard hook (`WH_KEYBOARD_LL`) so we can distinguish hold-to-talk from
-//! tap-to-toggle without owning input focus.
+//! The crate intentionally does **not** own the platform-specific hotkey
+//! registration code — that lives in `apps/desktop/src-tauri` because Tauri
+//! supplies a maintained `tauri-plugin-global-shortcut` that handles the
+//! Windows low-level keyboard hook lifecycle, refcounting, and DPI awareness.
 //!
-//! ## Status
-//!
-//! Slice 1 implementation lands once the toolchain is ready.
+//! Instead, this crate defines the typed `HotkeyEvent` enum and the `HotkeyBus`
+//! channel pair the rest of the engines consume. That way the dictation
+//! orchestrator and any future test harness depend on this crate, not on Tauri.
+
+pub mod binding;
+pub mod bus;
+pub mod event;
+
+pub use binding::HotkeyBinding;
+pub use bus::{HotkeyBus, HotkeyReceiver, HotkeySender};
+pub use event::HotkeyEvent;

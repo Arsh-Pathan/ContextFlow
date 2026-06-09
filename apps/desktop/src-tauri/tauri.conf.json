@@ -53,7 +53,7 @@
     "category": "Productivity",
     "copyright": "Copyright (c) 2026 ContextFlow Contributors",
     "licenseFile": "../../../LICENSE",
-    "resources": ["../../../ggml-small.en.bin"],
+    "resources": [],
     "externalBin": [],
     "windows": {
       "wix": {

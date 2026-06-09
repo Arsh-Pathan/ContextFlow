@@ -26,9 +26,8 @@ export function Bubble({ status, level, message }: BubbleProps) {
   // 6 dots for the visualizer
   const numDots = 6;
   const dots = Array.from({ length: numDots }).map((_, i) => {
-    // Determine dynamic scale for audio reactivity
+    // Calculate the scaling height for this bar
     let scaleY = 1;
-    let translateY = 0;
     
     // EXTREMELY reactive audio profile
     if (status === "listening" && level !== undefined) {

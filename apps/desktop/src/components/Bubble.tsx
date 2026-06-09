@@ -40,8 +40,10 @@ export function Bubble({ status, level, message }: BubbleProps) {
       const distanceToCenter = Math.abs((numDots - 1) / 2 - i);
       const curve = 1 - (distanceToCenter / ((numDots - 1) / 2)) * 0.3;
       
-      const baseGain = level * 120;
-      scaleY = 1 + Math.min(10, baseGain * curve * dynamicIntensity);
+      const baseGain = level * 100;
+      // Cap scaleY to 2.5 so the 8px dot doesn't exceed 20-24px total height 
+      // (which keeps it safely inside the 44px window)
+      scaleY = 1 + Math.min(2.5, baseGain * curve * dynamicIntensity);
     }
 
     const delayMs = i * 150; // slightly wider stagger for a smoother sine wave
@@ -104,8 +106,8 @@ export function Bubble({ status, level, message }: BubbleProps) {
       <style>{`
         @keyframes processing-wave {
           0%, 100% { transform: translateY(0); opacity: 0.4; }
-          25% { transform: translateY(-5px); opacity: 1; }
-          75% { transform: translateY(5px); opacity: 1; }
+          25% { transform: translateY(-12px); opacity: 1; }
+          75% { transform: translateY(12px); opacity: 1; }
         }
         @keyframes idle-breathe {
           0%, 100% { opacity: 0.3; transform: scale(1); }

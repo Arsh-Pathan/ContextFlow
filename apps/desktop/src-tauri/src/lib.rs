@@ -118,4 +118,3 @@ fn register_ptt_shortcut(app: &tauri::App) -> tauri::Result<()> {
     info!(accelerator = "Ctrl+Space", "registered push-to-talk hotkey");
     Ok(())
 }
-

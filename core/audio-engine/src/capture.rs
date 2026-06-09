@@ -10,8 +10,8 @@
 //! minimum (downmix + send), and the worker does the slow work (FFT
 //! resample, VAD).
 
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{SampleFormat, Stream, StreamConfig};
@@ -102,7 +102,8 @@ impl AudioEngine {
             std::thread::Builder::new()
                 .name("contextflow-audio-worker".to_owned())
                 .spawn(move || {
-                    if let Err(err) = worker_loop(audio_rx, src_rate, &frames_tx, &levels_tx, &shutdown)
+                    if let Err(err) =
+                        worker_loop(audio_rx, src_rate, &frames_tx, &levels_tx, &shutdown)
                     {
                         error!(?err, "audio worker exited with error");
                     } else {

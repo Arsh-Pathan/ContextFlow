@@ -51,8 +51,8 @@ mod tests {
 
     #[test]
     fn status_serializes_snake_case() {
-        let json = serde_json::to_string(&DictationStatusEvent::new(DictationStatus::Listening))
-            .unwrap();
+        let json =
+            serde_json::to_string(&DictationStatusEvent::new(DictationStatus::Listening)).unwrap();
         assert_eq!(json, r#"{"status":"listening"}"#);
     }
 }

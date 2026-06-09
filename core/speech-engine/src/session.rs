@@ -47,7 +47,10 @@ impl AudioSink {
 
     /// Push a frame. Returns `Err(SinkClosed)` if the consumer has gone away.
     pub async fn push(&self, frame: AudioFrame) -> Result<(), SpeechError> {
-        self.inner.send(frame).await.map_err(|_| SpeechError::SinkClosed)
+        self.inner
+            .send(frame)
+            .await
+            .map_err(|_| SpeechError::SinkClosed)
     }
 
     /// Close the sink, signalling end-of-utterance. After this the session
@@ -77,8 +80,5 @@ pub enum TranscriptEvent {
     /// Recognition finished without any text (e.g. the user said nothing).
     Empty,
     /// The provider failed. `recoverable` tells the orchestrator whether to retry.
-    Error {
-        message: String,
-        recoverable: bool,
-    },
+    Error { message: String, recoverable: bool },
 }

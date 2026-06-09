@@ -55,7 +55,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     println!();
-    println!("Captured {} voiced frames, {} silent frames.", voiced, silent);
+    println!("Captured {voiced} voiced frames, {silent} silent frames.");
     if voiced + silent == 0 {
         println!("⚠ No frames produced — is the worker thread running?");
     } else if voiced == 0 {

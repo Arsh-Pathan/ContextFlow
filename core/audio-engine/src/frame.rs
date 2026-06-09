@@ -82,7 +82,13 @@ mod tests {
     #[test]
     fn rms_of_full_scale_square_is_one() {
         let s: Vec<i16> = (0..FRAME_SAMPLES)
-            .map(|i| if i.is_multiple_of(2) { i16::MAX } else { i16::MIN + 1 })
+            .map(|i| {
+                if i.is_multiple_of(2) {
+                    i16::MAX
+                } else {
+                    i16::MIN + 1
+                }
+            })
             .collect();
         let r = rms_i16(&s);
         // Within rounding distance of 1.0 — the alternating square wave is

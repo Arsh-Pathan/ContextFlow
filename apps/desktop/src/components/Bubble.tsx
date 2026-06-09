@@ -30,21 +30,23 @@ export function Bubble({ status, level, message }: BubbleProps) {
     let scaleY = 1;
     let translateY = 0;
     
-    // Very reactive audio profile
+    // EXTREMELY reactive audio profile
     if (status === "listening" && level !== undefined) {
       const distanceToCenter = Math.abs((numDots - 1) / 2 - i);
       const intensity = 1 - (distanceToCenter / ((numDots - 1) / 2)) * 0.4;
-      const baseGain = level * 10;
-      scaleY = 1 + Math.min(3.5, baseGain * intensity);
+      // Multiply by a huge number because raw RMS levels can be very small (e.g. 0.01)
+      const baseGain = level * 80;
+      // Let it scale massively up to 8x so it really jumps
+      scaleY = 1 + Math.min(8, baseGain * intensity);
     }
 
-    const delayMs = i * 100;
+    const delayMs = i * 150; // slightly wider stagger for a smoother sine wave
     const delay = `${delayMs}ms`;
     
     // Determine the animation based on state
     let animation = 'none';
     if (status === "processing") {
-      animation = `processing-bounce 0.8s ease-in-out ${delay} infinite`;
+      animation = `processing-wave 1.2s ease-in-out ${delay} infinite`;
     } else if (status === "idle") {
       animation = `idle-breathe 2s ease-in-out ${delayMs * 2}ms infinite`;
     } else if (status === "error") {
@@ -56,10 +58,10 @@ export function Bubble({ status, level, message }: BubbleProps) {
       animation: animation,
     };
 
-    // Use a fast transition for listening so it feels snappy and reactive,
+    // Use an instant transition for listening so it snaps exactly to the voice,
     // but a slower transition for other state changes.
     const transitionClass = status === "listening" 
-      ? "transition-transform duration-75 ease-out" 
+      ? "transition-transform duration-50 ease-out" 
       : "transition-all duration-300 ease-in-out";
 
     return (
@@ -67,11 +69,11 @@ export function Bubble({ status, level, message }: BubbleProps) {
         key={i}
         className={`w-1.5 rounded-full origin-center ${transitionClass} ${
           status === "processing" 
-            ? "h-1.5 bg-sky-400" 
+            ? "h-1.5 bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.8)]" 
             : status === "error"
               ? "h-1.5 bg-rose-500"
               : status === "listening"
-                ? "h-2 bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)]"
+                ? "h-2 bg-white shadow-[0_0_12px_rgba(255,255,255,1)]"
                 : "h-1.5 bg-gray-500"
         }`}
         style={dotStyle}
@@ -96,9 +98,10 @@ export function Bubble({ status, level, message }: BubbleProps) {
       data-status={status}
     >
       <style>{`
-        @keyframes processing-bounce {
-          0%, 100% { transform: translateY(0) scale(1); opacity: 0.4; }
-          50% { transform: translateY(-4px) scale(1.2); opacity: 1; }
+        @keyframes processing-wave {
+          0%, 100% { transform: translateY(0); opacity: 0.4; }
+          25% { transform: translateY(-5px); opacity: 1; }
+          75% { transform: translateY(5px); opacity: 1; }
         }
         @keyframes idle-breathe {
           0%, 100% { opacity: 0.3; transform: scale(1); }

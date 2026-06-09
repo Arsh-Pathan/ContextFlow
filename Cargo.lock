@@ -450,9 +450,12 @@ name = "contextflow-desktop"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "contextflow-dictation-engine",
  "contextflow-hotkey",
  "contextflow-ipc-contracts",
+ "contextflow-speech-engine",
  "contextflow-telemetry",
+ "contextflow-text-injection",
  "serde",
  "serde_json",
  "tauri",
@@ -468,6 +471,8 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "contextflow-audio-engine",
+ "contextflow-hotkey",
+ "contextflow-ipc-contracts",
  "contextflow-speech-engine",
  "contextflow-text-injection",
  "futures",

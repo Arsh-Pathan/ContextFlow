@@ -32,9 +32,12 @@ tokio        = { workspace = true }
 tracing      = { workspace = true }
 
 # Internal crates
-contextflow-telemetry     = { workspace = true }
-contextflow-ipc-contracts = { workspace = true }
-contextflow-hotkey        = { workspace = true }
+contextflow-telemetry        = { workspace = true }
+contextflow-ipc-contracts    = { workspace = true }
+contextflow-hotkey           = { workspace = true }
+contextflow-dictation-engine = { workspace = true }
+contextflow-speech-engine    = { workspace = true, features = ["provider-windows"] }
+contextflow-text-injection   = { workspace = true }
 
 [features]
 # Tauri's default custom-protocol feature is enabled for release builds by the CLI.

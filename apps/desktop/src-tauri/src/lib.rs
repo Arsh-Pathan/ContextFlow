@@ -6,23 +6,29 @@
 //!
 //! Slice 1 progress:
 //!   - commit 1: bubble window + tray icon          ✅
-//!   - commit 2: Ctrl+Space hotkey + bubble state   ← this commit
-//!   - commit 3: audio capture                      ⏳
-//!   - commit 4: speech provider                    ⏳
-//!   - commit 5: text injection                     ⏳
-//!   - commit 6: dictation orchestrator             ⏳
+//!   - commit 2: Ctrl+Space hotkey + bubble state   ✅
+//!   - commit 3: audio capture                      ✅
+//!   - commit 4: speech provider                    ✅
+//!   - commit 5: text injection                     ✅
+//!   - commit 6: dictation orchestrator             ← this commit
 
 mod hotkey_bridge;
+
+use std::sync::Arc;
 
 use tauri::{
     menu::{Menu, MenuItem},
     tray::TrayIconBuilder,
-    Manager,
+    AppHandle, Emitter, Manager,
 };
 use tauri_plugin_global_shortcut::{Code, Modifiers, Shortcut};
-use tracing::info;
+use tracing::{error, info};
 
+use contextflow_dictation_engine::{DictationEngine, DictationHandle, StatusEmitter};
 use contextflow_hotkey::HotkeyBus;
+use contextflow_ipc_contracts::{DictationStatusEvent, EVENT_DICTATION_STATUS};
+use contextflow_speech_engine::providers::windows_sr::WindowsSpeechProvider;
+use contextflow_text_injection::SendInputInjector;
 
 use crate::hotkey_bridge::HotkeyBridge;
 
@@ -33,17 +39,48 @@ pub fn run() {
     info!("ContextFlow desktop starting");
 
     let hotkey_bus = HotkeyBus::new(16);
+    let hotkey_rx = hotkey_bus.subscribe();
 
     tauri::Builder::default()
         .plugin(build_global_shortcut_plugin(hotkey_bus.sender()))
         .manage(hotkey_bus)
-        .setup(|app| {
+        .setup(move |app| {
             build_tray(app)?;
             register_ptt_shortcut(app)?;
+            let handle = start_dictation_engine(app.handle().clone(), hotkey_rx);
+            // Stash the handle in Tauri state so a future `quit` path can
+            // call `.abort()`. For slice 1 the engine simply runs until the
+            // process exits.
+            app.manage(DictationOrchestrator(handle));
             Ok(())
         })
         .run(tauri::generate_context!())
         .expect("ContextFlow: error while running tauri application");
+}
+
+/// New-type wrapper so the `DictationHandle` can live in Tauri's state map.
+struct DictationOrchestrator(#[allow(dead_code)] DictationHandle);
+
+/// Spin up the dictation orchestrator with the slice-1 backends:
+///   * `WindowsSpeechProvider` for transcription (Windows.Media.SpeechRecognition).
+///   * `SendInputInjector` for typing the final transcript into the focused window.
+///   * A status-emit closure that forwards every `DictationStatusEvent`
+///     to the bubble UI via the same Tauri event channel the hotkey bridge uses.
+fn start_dictation_engine<R: tauri::Runtime>(
+    app: AppHandle<R>,
+    hotkey_rx: contextflow_hotkey::HotkeyReceiver,
+) -> DictationHandle {
+    let provider = Arc::new(WindowsSpeechProvider::new());
+    let injector = Arc::new(SendInputInjector::new());
+
+    let emit: StatusEmitter = Arc::new(move |event: DictationStatusEvent| {
+        if let Err(err) = app.emit(EVENT_DICTATION_STATUS, &event) {
+            error!(?err, "failed to emit dictation status from orchestrator");
+        }
+    });
+
+    info!("starting dictation orchestrator (slice 1: Windows SR + SendInput)");
+    DictationEngine::start(hotkey_rx, provider, injector, emit)
 }
 
 /// Build the system tray icon and its context menu.

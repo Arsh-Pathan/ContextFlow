@@ -19,6 +19,8 @@ thiserror   = { workspace = true }
 tokio       = { workspace = true }
 tracing     = { workspace = true }
 
-contextflow-audio-engine    = { workspace = true }
-contextflow-speech-engine   = { workspace = true }
-contextflow-text-injection  = { workspace = true }
+contextflow-audio-engine   = { workspace = true }
+contextflow-hotkey         = { workspace = true }
+contextflow-ipc-contracts  = { workspace = true }
+contextflow-speech-engine  = { workspace = true }
+contextflow-text-injection = { workspace = true }

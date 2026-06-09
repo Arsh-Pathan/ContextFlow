@@ -54,7 +54,7 @@
     "copyright": "Copyright (c) 2026 ContextFlow Contributors",
     "licenseFile": "../../../LICENSE",
     "resources": {
-      "models/ggml-base.en.bin": "ggml-base.en.bin"
+      "models/ggml-large-v3-turbo.bin": "ggml-large-v3-turbo.bin"
     },
     "externalBin": [],
     "windows": {

@@ -15,7 +15,7 @@ use std::sync::Arc;
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{SampleFormat, Stream, StreamConfig};
-use tokio::sync::{broadcast, mpsc};
+use tokio::sync::broadcast;
 use tracing::{debug, error, info, warn};
 
 use crate::error::AudioError;
@@ -30,8 +30,8 @@ use crate::{FRAME_BROADCAST_CAPACITY, LEVEL_BROADCAST_CAPACITY};
 /// latency without flooding the channel.
 const AUDIO_CALLBACK_CHUNK: usize = 1_536;
 
-/// Capacity (in chunks) of the audio-thread → worker mpsc.
-const AUDIO_CHANNEL_CAPACITY: usize = 16;
+/// Capacity (in samples) of the audio-thread → worker ring buffer.
+const AUDIO_RING_CAPACITY: usize = AUDIO_CALLBACK_CHUNK * 16;
 
 /// Handle to the running audio engine. Drop it to stop capture.
 ///
@@ -83,8 +83,8 @@ impl AudioEngine {
             "opening audio input"
         );
 
-        // Audio thread → worker channel. Carries mono f32 chunks.
-        let (audio_tx, audio_rx) = mpsc::channel::<Vec<f32>>(AUDIO_CHANNEL_CAPACITY);
+        // Audio thread → worker lock-free ring buffer.
+        let (audio_tx, audio_rx) = rtrb::RingBuffer::<f32>::new(AUDIO_RING_CAPACITY);
 
         // Worker → subscribers broadcasts.
         let (frames_tx, _) = broadcast::channel::<AudioFrame>(FRAME_BROADCAST_CAPACITY);
@@ -161,12 +161,13 @@ fn build_stream_f32(
     device: &cpal::Device,
     config: &StreamConfig,
     channels: usize,
-    tx: mpsc::Sender<Vec<f32>>,
+    tx: rtrb::Producer<f32>,
 ) -> Result<Stream, AudioError> {
+    let mut tx = tx;
     device
         .build_input_stream(
             config,
-            move |data: &[f32], _| dispatch_f32(data, channels, &tx),
+            move |data: &[f32], _| dispatch_f32(data, channels, &mut tx),
             |err| error!(?err, "cpal input stream error"),
             None,
         )
@@ -177,8 +178,9 @@ fn build_stream_i16(
     device: &cpal::Device,
     config: &StreamConfig,
     channels: usize,
-    tx: mpsc::Sender<Vec<f32>>,
+    tx: rtrb::Producer<f32>,
 ) -> Result<Stream, AudioError> {
+    let mut tx = tx;
     device
         .build_input_stream(
             config,
@@ -187,7 +189,7 @@ fn build_stream_i16(
                 for &s in data {
                     converted.push(f32::from(s) / f32::from(i16::MAX));
                 }
-                dispatch_f32(&converted, channels, &tx);
+                dispatch_f32(&converted, channels, &mut tx);
             },
             |err| error!(?err, "cpal input stream error"),
             None,
@@ -199,8 +201,9 @@ fn build_stream_u16(
     device: &cpal::Device,
     config: &StreamConfig,
     channels: usize,
-    tx: mpsc::Sender<Vec<f32>>,
+    tx: rtrb::Producer<f32>,
 ) -> Result<Stream, AudioError> {
+    let mut tx = tx;
     device
         .build_input_stream(
             config,
@@ -211,7 +214,7 @@ fn build_stream_u16(
                     let centered = i32::from(s) - 32_768;
                     converted.push(centered as f32 / 32_768.0);
                 }
-                dispatch_f32(&converted, channels, &tx);
+                dispatch_f32(&converted, channels, &mut tx);
             },
             |err| error!(?err, "cpal input stream error"),
             None,
@@ -220,43 +223,42 @@ fn build_stream_u16(
 }
 
 /// Audio-thread side of the pipeline. Downmix interleaved input to mono and
-/// hand it to the worker. Must be cheap.
-fn dispatch_f32(data: &[f32], channels: usize, tx: &mpsc::Sender<Vec<f32>>) {
+/// hand it to the worker. Must be cheap, no allocations.
+fn dispatch_f32(data: &[f32], channels: usize, tx: &mut rtrb::Producer<f32>) {
     if channels == 0 || data.is_empty() {
         return;
     }
     let frames = data.len() / channels;
-    let mut mono = Vec::with_capacity(frames);
-    if channels == 1 {
-        mono.extend_from_slice(data);
-    } else {
+
+    // Check if we have enough space in the ring buffer.
+    if tx.slots() < frames {
+        warn!("audio worker behind; dropped a buffer");
+        return;
+    }
+
+    if let Ok(mut chunk) = tx.write_chunk(frames) {
+        let (slice1, slice2) = chunk.as_mut_slices();
+        let mut mono_idx = 0;
+        
         let scale = 1.0 / channels as f32;
         for frame in data.chunks_exact(channels) {
             let sum: f32 = frame.iter().sum();
-            mono.push(sum * scale);
-        }
-    }
-
-    // `try_send` rather than `blocking_send`: if the worker is genuinely
-    // behind we'd rather drop a buffer than stall the audio thread, which
-    // would manifest as device underrun.
-    if let Err(err) = tx.try_send(mono) {
-        match err {
-            mpsc::error::TrySendError::Full(_) => {
-                warn!("audio worker behind; dropped a buffer");
+            let val = sum * scale;
+            if mono_idx < slice1.len() {
+                slice1[mono_idx] = val;
+            } else {
+                slice2[mono_idx - slice1.len()] = val;
             }
-            mpsc::error::TrySendError::Closed(_) => {
-                // Worker has exited; nothing to do — the engine is being
-                // dropped.
-            }
+            mono_idx += 1;
         }
+        chunk.commit_all();
     }
 }
 
 // ───────────────────────── worker thread ─────────────────────────
 
 fn worker_loop(
-    mut rx: mpsc::Receiver<Vec<f32>>,
+    mut rx: rtrb::Consumer<f32>,
     src_rate: u32,
     frames_tx: &broadcast::Sender<AudioFrame>,
     levels_tx: &broadcast::Sender<f32>,
@@ -271,11 +273,17 @@ fn worker_loop(
     // fixed input size in one call.
     let mut pending_in: Vec<f32> = Vec::with_capacity(AUDIO_CALLBACK_CHUNK * 2);
 
-    while let Some(chunk) = rx.blocking_recv() {
-        if shutdown.load(Ordering::Acquire) {
-            break;
+    while !shutdown.load(Ordering::Acquire) {
+        if let Ok(chunk) = rx.read_chunk(rx.slots()) {
+            let (slice1, slice2) = chunk.as_slices();
+            pending_in.extend_from_slice(slice1);
+            pending_in.extend_from_slice(slice2);
+            chunk.commit_all();
+        } else {
+            // Sleep briefly to avoid spinning CPU when ring buffer is empty
+            std::thread::sleep(std::time::Duration::from_millis(5));
+            continue;
         }
-        pending_in.extend_from_slice(&chunk);
 
         // Feed the resampler in fixed-size chunks, accumulate output.
         while pending_in.len() >= resampler.chunk_size_in() {

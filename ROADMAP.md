@@ -44,7 +44,7 @@ runs entirely offline.
 
 **Scope:**
 
-- `WhisperCppProvider` (via `whisper-rs`), default model `small.en`.
+- `WhisperCppProvider` (via `whisper-rs`), default model `large-v3-turbo`.
 - `FasterWhisperProvider` via a Python sidecar (gRPC over Unix-domain pipe).
 - Model manager: first-run download with progress UI, integrity checks, cache.
 - Streaming transcription with partial results displayed in the bubble.

@@ -28,7 +28,7 @@ use contextflow_dictation_engine::{DictationEngine, DictationHandle, StatusEmitt
 use contextflow_hotkey::HotkeyBus;
 use contextflow_ipc_contracts::{DictationStatus, DictationStatusEvent, EVENT_DICTATION_STATUS};
 use contextflow_speech_engine::providers::whisper_cpp::WhisperCppProvider;
-use contextflow_text_injection::SendInputInjector;
+use contextflow_text_injection::ClipboardInjector;
 
 use crate::hotkey_bridge::HotkeyBridge;
 
@@ -71,7 +71,7 @@ struct DictationOrchestrator(#[allow(dead_code)] DictationHandle);
 async fn ensure_model_exists<R: tauri::Runtime>(app: &AppHandle<R>) -> anyhow::Result<std::path::PathBuf> {
     let app_data = app.path().app_data_dir().map_err(|e| anyhow::anyhow!("Failed to get app data dir: {}", e))?;
     std::fs::create_dir_all(&app_data)?;
-    let model_path = app_data.join("ggml-base.en.bin");
+    let model_path = app_data.join("ggml-large-v3-turbo.bin");
     
     if model_path.exists() {
         return Ok(model_path);
@@ -79,7 +79,7 @@ async fn ensure_model_exists<R: tauri::Runtime>(app: &AppHandle<R>) -> anyhow::R
     
     // Check if model is bundled as a Tauri resource
     if let Ok(resource_dir) = app.path().resource_dir() {
-        let bundled = resource_dir.join("ggml-base.en.bin");
+        let bundled = resource_dir.join("ggml-large-v3-turbo.bin");
         if bundled.exists() {
             info!("Copying bundled model from {:?} to {:?}", bundled, model_path);
             std::fs::copy(&bundled, &model_path)?;
@@ -88,7 +88,7 @@ async fn ensure_model_exists<R: tauri::Runtime>(app: &AppHandle<R>) -> anyhow::R
     }
     
     info!("Model not found at {:?}, downloading from HuggingFace...", model_path);
-    let url = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin";
+    let url = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo.bin";
     
     let mut response = reqwest::get(url).await?;
     if !response.status().is_success() {
@@ -106,7 +106,7 @@ async fn ensure_model_exists<R: tauri::Runtime>(app: &AppHandle<R>) -> anyhow::R
 
 /// Spin up the dictation orchestrator with the slice-2 backends:
 ///   * `WhisperCppProvider` for transcription (whisper-rs).
-///   * `SendInputInjector` for typing the final transcript into the focused window.
+///   * `ClipboardInjector` for typing the final transcript into the focused window.
 ///   * A status-emit closure that forwards every `DictationStatusEvent`
 ///     to the bubble UI via the same Tauri event channel the hotkey bridge uses.
 async fn start_dictation_engine<R: tauri::Runtime>(
@@ -118,7 +118,7 @@ async fn start_dictation_engine<R: tauri::Runtime>(
         Ok(path) => path,
         Err(e) => {
             error!("Failed to ensure model exists: {e}. Falling back to default path.");
-            std::path::PathBuf::from("../../../ggml-base.en.bin")
+            std::path::PathBuf::from("../../../ggml-large-v3-turbo.bin")
         }
     };
     
@@ -145,7 +145,7 @@ async fn start_dictation_engine<R: tauri::Runtime>(
     }
     let _ = app.emit(EVENT_DICTATION_STATUS, &init_event);
 
-    let injector = Arc::new(SendInputInjector::new());
+    let injector = Arc::new(ClipboardInjector::new());
 
     let emit: StatusEmitter = Arc::new(move |event: DictationStatusEvent| {
         if let Err(err) = app.emit(EVENT_DICTATION_STATUS, &event) {

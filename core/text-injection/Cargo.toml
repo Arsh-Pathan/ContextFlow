@@ -12,6 +12,7 @@ description = "UIA / SendInput / clipboard text-injection strategies for Windows
 workspace = true
 
 [dependencies]
+arboard = "3.6.1"
 async-trait = { workspace = true }
 serde       = { workspace = true }
 thiserror   = { workspace = true }

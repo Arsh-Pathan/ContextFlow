@@ -114,7 +114,7 @@ Concrete providers planned (Slice 1 ships only the first):
 | Provider              | Slice | Notes                                                 |
 |-----------------------|------:|-------------------------------------------------------|
 | `WindowsSpeechProvider` | 1   | `Windows.Media.SpeechRecognition`. No deps, ships everywhere. |
-| `WhisperCppProvider`    | 2   | `whisper-rs`, ggml `small.en` default. Local-first.   |
+| `WhisperCppProvider`    | 2   | `whisper-rs`, ggml `large-v3-turbo` default. Local-first.   |
 | `FasterWhisperProvider` | 2   | Python sidecar via `tonic` gRPC. Higher accuracy.     |
 | `DeepgramProvider`      | 4   | Streaming WebSocket. Cloud, opt-in.                   |
 | `OpenAIRealtimeProvider`| 4   | Realtime API. Cloud, opt-in.                          |

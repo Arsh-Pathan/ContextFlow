@@ -82,6 +82,29 @@ impl SpeechProvider for WhisperCppProvider {
                     .map(|s| (s as f32) / 32767.0)
                     .collect();
 
+                // ── Gentle silence trimming ──
+                // Strip leading/trailing silence so whisper doesn't process
+                // long stretches of nothing. Only trim if there's clearly
+                // speech somewhere in the buffer.
+                const SILENCE_THRESHOLD: f32 = 0.0005; // ~-66 dBFS — very permissive
+                const MARGIN_SAMPLES: usize = 160;     // 10 ms at 16 kHz
+                let first = audio_f32.iter()
+                    .position(|&s| s.abs() > SILENCE_THRESHOLD)
+                    .unwrap_or(0);
+                let trimmed = if first > 0 && first < audio_f32.len() / 2 {
+                    let last = audio_f32.iter()
+                        .rposition(|&s| s.abs() > SILENCE_THRESHOLD)
+                        .map(|i| i + 1)
+                        .unwrap_or(audio_f32.len());
+                    let end = (last + MARGIN_SAMPLES).min(audio_f32.len());
+                    let start = first.saturating_sub(MARGIN_SAMPLES);
+                    &audio_f32[start..end]
+                } else {
+                    &audio_f32[..]
+                };
+
+                debug!("trimmed from {} to {} samples", audio_f32.len(), trimmed.len());
+
                 let mut state = match context.create_state() {
                     Ok(s) => s,
                     Err(e) => {
@@ -98,6 +121,11 @@ impl SpeechProvider for WhisperCppProvider {
                 params.set_print_special(false);
                 params.set_print_realtime(false);
                 params.set_print_timestamps(false);
+                params.set_no_speech_thold(0.6);
+                params.set_suppress_blank(true);
+                params.set_suppress_non_speech_tokens(true);
+                params.set_entropy_thold(2.4);
+                params.set_logprob_thold(-1.0);
                 
                 if let Some(ref lang) = language {
                     params.set_language(Some(lang.as_str()));
@@ -105,7 +133,7 @@ impl SpeechProvider for WhisperCppProvider {
                     params.set_language(Some("en"));
                 }
 
-                if let Err(e) = state.full(params, &audio_f32) {
+                if let Err(e) = state.full(params, &trimmed) {
                     let _ = events_tx.blocking_send(TranscriptEvent::Error {
                         message: format!("inference failed: {e}"),
                         recoverable: false,
@@ -141,3 +169,4 @@ impl SpeechProvider for WhisperCppProvider {
         })
     }
 }
+

@@ -30,10 +30,12 @@
 //! even though each call returns in well under a millisecond on a
 //! typical machine.
 
+pub mod clipboard;
 pub mod error;
 pub mod injector;
 pub mod send_input;
 
+pub use clipboard::ClipboardInjector;
 pub use error::InjectionError;
 pub use injector::TextInjector;
 pub use send_input::SendInputInjector;

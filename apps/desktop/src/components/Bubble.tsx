@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import { useRef, type CSSProperties } from "react";
 import { X } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
@@ -42,51 +42,31 @@ export function Bubble({ status, level, message, provider, warning }: BubbleProp
       ? `ContextFlow: Error — ${message}`
       : `ContextFlow: ${STATUS_LABEL[status]}`;
 
+  // Smooth incoming level with exponential moving average
+  const smoothLevelRef = useRef(0);
+  const raw = level ?? 0;
+  // Heavy smoothing — takes ~20 frames (400ms) to reach 95% of a step
+  smoothLevelRef.current = smoothLevelRef.current * 0.88 + raw * 0.12;
+  const smoothed = smoothLevelRef.current;
+
   // 6 dots for the visualizer
   const numDots = 6;
   const dots = Array.from({ length: numDots }).map((_, i) => {
-    // Determine dynamic scale for audio reactivity
     let scaleY = 1;
 
-    // EXTREMELY reactive audio profile
-      if (status === "listening" && level !== undefined) {
-          // Softer, more stable variation per dot
-          const pseudoRandom = Math.abs(
-              Math.sin(level * 12 + i * 0.8)
-          );
+    if (status === "listening" && level !== undefined) {
+      const distanceToCenter = Math.abs((numDots - 1) / 2 - i);
+      const curve = 1 - (distanceToCenter / ((numDots - 1) / 2)) * 0.35;
 
-          // Reduced intensity range to avoid flickering
-          const dynamicIntensity =
-              0.65 + (0.35 * pseudoRandom);
+      // Gentle gain — just enough to show movement without jitter
+      const baseGain = smoothed * 6;
 
-          const distanceToCenter = Math.abs(
-              (numDots - 1) / 2 - i
-          );
+      scaleY = 1 + Math.min(1.6, baseGain * curve);
+    }
 
-          const curve =
-              1 -
-              (distanceToCenter /
-                  ((numDots - 1) / 2)) *
-              0.3;
-
-          // Lower gain = smoother movement
-          const baseGain = level * 16;
-
-          // Clamp to avoid jumpy spikes
-          scaleY =
-              1 +
-              Math.min(
-                  2.2,
-                  baseGain *
-                  curve *
-                  dynamicIntensity
-              );
-      }
-
-    const delayMs = i * 150; // slightly wider stagger for a smoother sine wave
+    const delayMs = i * 150;
     const delay = `${delayMs}ms`;
 
-    // Determine the animation based on state
     let animation = 'none';
     if (status === "processing") {
       animation = `processing-wave 1.2s ease-in-out ${delay} infinite`;
@@ -101,10 +81,8 @@ export function Bubble({ status, level, message, provider, warning }: BubbleProp
       animation: animation,
     };
 
-    // Use an instant transition for listening so it snaps exactly to the voice,
-    // but a slower transition for other state changes.
     const transitionClass = status === "listening"
-      ? "transition-transform duration-100 ease-out"
+      ? "transition-transform duration-150 ease-out"
       : "transition-all duration-300 ease-in-out";
 
     return (
@@ -132,22 +110,22 @@ export function Bubble({ status, level, message, provider, warning }: BubbleProp
     }
   };
 
-  // Determine border and shadow styling based on state
-  let borderClass = "border-[#333]";
   let shadowClass = "shadow-[0_4px_24px_rgba(0,0,0,0.6)]";
+  let gradientStyle = "conic-gradient(from 0deg, transparent 0%, #333 50%, transparent 100%)";
+  let spinDuration = "4s";
 
   if (status === "listening") {
-    // Logo's main color (emerald)
-    borderClass = "border-[#10b981]";
     shadowClass = "shadow-[0_0_24px_rgba(16,185,129,0.4)]";
+    gradientStyle = "conic-gradient(from 0deg, transparent 0%, #10b981 30%, white 50%, #10b981 70%, transparent 100%)";
+    spinDuration = "2s";
   } else if (status === "processing") {
-    // Processing sky-blue
-    borderClass = "border-sky-400";
     shadowClass = "shadow-[0_0_24px_rgba(56,189,248,0.4)]";
+    gradientStyle = "conic-gradient(from 0deg, transparent 0%, #38bdf8 30%, white 50%, #38bdf8 70%, transparent 100%)";
+    spinDuration = "1.5s";
   } else if (status === "error") {
-    // Error rose-red
-    borderClass = "border-rose-500";
     shadowClass = "shadow-[0_0_24px_rgba(244,63,94,0.4)]";
+    gradientStyle = "conic-gradient(from 0deg, transparent 0%, #f43f5e 30%, white 50%, #f43f5e 70%, transparent 100%)";
+    spinDuration = "0s"; // Stop spinning on error
   }
 
   return (
@@ -155,7 +133,7 @@ export function Bubble({ status, level, message, provider, warning }: BubbleProp
       role="status"
       aria-label={ariaLabel}
       title={tooltip}
-      className={`w-[180px] h-[44px] flex items-center justify-between px-3 rounded-[22px] bg-[#1a1a1a] border-2 transition-colors duration-300 overflow-hidden ${borderClass} ${shadowClass}`}
+      className={`relative w-[180px] h-[44px] rounded-[22px] overflow-hidden p-[2px] transition-shadow duration-300 ${shadowClass}`}
       data-status={status}
     >
       <style>{`
@@ -173,40 +151,57 @@ export function Bubble({ status, level, message, provider, warning }: BubbleProp
           25% { transform: translateX(-2px); }
           75% { transform: translateX(2px); }
         }
+        @keyframes spin-gradient {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
       `}</style>
 
-      {/* Left Icon (Logo) */}
-      <div className={`flex items-center justify-center w-7 h-7 rounded-full overflow-hidden transition-all duration-300 ${
-        status === "listening" ? "drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] scale-110" 
-        : status === "processing" ? "drop-shadow-[0_0_8px_rgba(56,189,248,0.6)]"
-        : status === "error" ? "grayscale"
-        : ""
-      }`}>
-        <img src="/contextflow.svg" alt="ContextFlow Logo" className="w-full h-full object-cover" />
-      </div>
+      {/* Spinning Gradient Border */}
+      <div 
+        className="absolute -inset-[150%] rounded-full opacity-90"
+        style={{
+          background: gradientStyle,
+          filter: "blur(6px)",
+          animation: spinDuration === "0s" ? "none" : `spin-gradient ${spinDuration} linear infinite`
+        }}
+      />
 
-      {/* Middle Audio Visualizer Dots */}
-      <div className="flex gap-[5px] items-center justify-center flex-1 mx-2 h-6">
-        {dots}
-      </div>
-
-      {/* Warning indicator */}
-      {warning && (
-        <div
-          className="w-3.5 h-3.5 rounded-full bg-amber-500 flex items-center justify-center shrink-0"
-          title={warning}
-        >
-          <span className="text-black text-[10px] font-bold leading-none">!</span>
+      {/* Inner Content Box */}
+      <div className="relative w-full h-full flex items-center justify-between px-3 rounded-[20px] bg-[#1a1a1a]">
+        {/* Left Icon (Logo) */}
+        <div className={`flex items-center justify-center w-7 h-7 rounded-full overflow-hidden transition-all duration-300 ${
+          status === "listening" ? "drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] scale-110" 
+          : status === "processing" ? "drop-shadow-[0_0_8px_rgba(56,189,248,0.6)]"
+          : status === "error" ? "grayscale"
+          : ""
+        }`}>
+          <img src="/contextflow.svg" alt="ContextFlow Logo" className="w-full h-full object-cover" />
         </div>
-      )}
 
-      {/* Right Icon (Close Button) */}
-      <button
-        onClick={handleClose}
-        className="flex items-center justify-center w-6 h-6 rounded-full bg-white/5 text-gray-400 hover:text-white hover:bg-white/15 transition-all duration-200"
-      >
-        <X size={14} strokeWidth={2.5} />
-      </button>
+        {/* Middle Audio Visualizer Dots */}
+        <div className="flex gap-[5px] items-center justify-center flex-1 mx-2 h-6">
+          {dots}
+        </div>
+
+        {/* Warning indicator */}
+        {warning && (
+          <div
+            className="w-3.5 h-3.5 rounded-full bg-amber-500 flex items-center justify-center shrink-0"
+            title={warning}
+          >
+            <span className="text-black text-[10px] font-bold leading-none">!</span>
+          </div>
+        )}
+
+        {/* Right Icon (Close Button) */}
+        <button
+          onClick={handleClose}
+          className="flex items-center justify-center w-6 h-6 rounded-full bg-white/5 text-gray-400 hover:text-white hover:bg-white/15 transition-all duration-200"
+        >
+          <X size={14} strokeWidth={2.5} />
+        </button>
+      </div>
     </div>
   );
 }

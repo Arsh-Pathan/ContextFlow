@@ -18,6 +18,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 
 import { Bubble, type DictationStatus } from "./components/Bubble";
 import { subscribeDictationStatus, type DictationStatusEvent } from "./ipc";
@@ -100,6 +101,17 @@ export function App() {
       delete (window as DebugWindow).__contextflow_setStatus;
     };
   }, []);
+
+  // Show the window only when active (listening, processing, error)
+  // Hide it when idle to stay out of the user's way.
+  useEffect(() => {
+    const win = getCurrentWindow();
+    if (state.status === "idle") {
+      win.hide().catch((err) => console.warn("Failed to hide window:", err));
+    } else {
+      win.show().catch((err) => console.warn("Failed to show window:", err));
+    }
+  }, [state.status]);
 
   return (
     <div className="w-screen h-screen flex items-center justify-center">

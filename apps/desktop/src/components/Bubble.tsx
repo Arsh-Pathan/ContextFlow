@@ -95,12 +95,30 @@ export function Bubble({ status, level, message }: BubbleProps) {
     }
   };
 
+  // Determine border and shadow styling based on state
+  let borderClass = "border-[#333]";
+  let shadowClass = "shadow-[0_4px_24px_rgba(0,0,0,0.6)]";
+  
+  if (status === "listening") {
+    // Logo's main color (emerald)
+    borderClass = "border-[#10b981]"; 
+    shadowClass = "shadow-[0_0_24px_rgba(16,185,129,0.4)]";
+  } else if (status === "processing") {
+    // Processing sky-blue
+    borderClass = "border-sky-400";
+    shadowClass = "shadow-[0_0_24px_rgba(56,189,248,0.4)]";
+  } else if (status === "error") {
+    // Error rose-red
+    borderClass = "border-rose-500";
+    shadowClass = "shadow-[0_0_24px_rgba(244,63,94,0.4)]";
+  }
+
   return (
     <div
       role="status"
       aria-label={ariaLabel}
       title={status === "error" && message ? message : STATUS_LABEL[status]}
-      className="w-full h-full flex items-center justify-between px-3 rounded-[22px] bg-[#1a1a1a] border border-[#2a2a2a] shadow-[0_4px_24px_rgba(0,0,0,0.6)] overflow-hidden"
+      className={`w-full h-full flex items-center justify-between px-3 rounded-[22px] bg-[#1a1a1a] border-2 transition-colors duration-300 overflow-hidden ${borderClass} ${shadowClass}`}
       data-status={status}
     >
       <style>{`

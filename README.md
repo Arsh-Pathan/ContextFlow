@@ -68,9 +68,9 @@ each of which is independently runnable and acceptance-tested on Windows.
 
 | Slice | Goal | Status |
 |------:|------|--------|
-| 1 | End-to-end thin vertical: hotkey → Notepad | 🚧 In progress |
-| 2 | Local speech pipeline (whisper.cpp, streaming, models) | ⏳ Planned |
-| 3 | Robust text injection (UIA, per-app strategies) | ⏳ Planned |
+| 1 | End-to-end thin vertical: hotkey → Notepad | ✅ Done |
+| 2 | Local speech pipeline (whisper.cpp, auto-download, streaming, models) | ✅ Done |
+| 3 | Robust text injection (UIA, per-app strategies) | 🚧 In progress |
 | 4 | AI cleanup + voice commands | ⏳ Planned |
 | 5 | Context engine, snippets, personal dictionary, settings UI | ⏳ Planned |
 | 6 | Reliability, watchdog, installer, auto-update, telemetry | ⏳ Planned |

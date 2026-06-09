@@ -113,6 +113,9 @@ doc_markdown             = "allow"
 # Capability/flag structs legitimately carry several bools; that's not a smell.
 struct_excessive_bools   = "allow"
 
+[patch.crates-io]
+whisper-rs-sys = { path = "patches/whisper-rs-sys" }
+
 [profile.dev]
 opt-level = 1   # cpal + audio is unusably slow at opt-level 0
 debug     = true

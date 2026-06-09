@@ -33,15 +33,60 @@ impl DictationStatus {
 }
 
 /// Payload sent on [`EVENT_DICTATION_STATUS`].
+///
+/// The optional fields are populated by the orchestrator based on the
+/// state being entered:
+///
+/// * `level` is set when `status == Listening` so the bubble can pulse
+///   with the live RMS level the audio engine is reporting. Range
+///   `0.0..=1.0`.
+/// * `message` is set when `status == Error` to carry a one-line user-
+///   facing description ("microphone unavailable", "speech privacy not
+///   accepted", etc.) for the bubble's tooltip and the in-app log.
+///
+/// Both are `None` for every state where they don't apply. The UI MUST
+/// tolerate either being absent.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DictationStatusEvent {
     pub status: DictationStatus,
+
+    /// Live audio RMS in `0.0..=1.0`. Populated during `Listening`.
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub level: Option<f32>,
+
+    /// User-facing error context. Populated during `Error`.
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub message: Option<String>,
 }
 
 impl DictationStatusEvent {
     #[must_use]
     pub fn new(status: DictationStatus) -> Self {
-        Self { status }
+        Self {
+            status,
+            level: None,
+            message: None,
+        }
+    }
+
+    /// Convenience: `Listening` event carrying the latest RMS level.
+    #[must_use]
+    pub fn listening(level: f32) -> Self {
+        Self {
+            status: DictationStatus::Listening,
+            level: Some(level),
+            message: None,
+        }
+    }
+
+    /// Convenience: `Error` event carrying a user-facing message.
+    #[must_use]
+    pub fn error(message: impl Into<String>) -> Self {
+        Self {
+            status: DictationStatus::Error,
+            level: None,
+            message: Some(message.into()),
+        }
     }
 }
 
@@ -53,6 +98,48 @@ mod tests {
     fn status_serializes_snake_case() {
         let json =
             serde_json::to_string(&DictationStatusEvent::new(DictationStatus::Listening)).unwrap();
+        // Optional fields are omitted when None — keeps the wire small and
+        // the JavaScript-side type guards simple.
         assert_eq!(json, r#"{"status":"listening"}"#);
+    }
+
+    #[test]
+    fn listening_event_carries_level() {
+        let json = serde_json::to_string(&DictationStatusEvent::listening(0.42)).unwrap();
+        // f32 serialisation in serde_json uses the shortest round-trippable
+        // representation; pinning the exact string would be brittle. Check
+        // the fields are present and the level round-trips through parse.
+        let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
+        assert_eq!(parsed["status"], "listening");
+        let level = parsed["level"].as_f64().unwrap();
+        assert!((level - 0.42).abs() < 1e-6, "got {level}");
+        assert!(parsed.get("message").is_none());
+    }
+
+    #[test]
+    fn error_event_carries_message() {
+        let json =
+            serde_json::to_string(&DictationStatusEvent::error("microphone unavailable")).unwrap();
+        assert_eq!(
+            json,
+            r#"{"status":"error","message":"microphone unavailable"}"#
+        );
+    }
+
+    #[test]
+    fn extra_fields_round_trip() {
+        // Forward-compat: a UI built against an older schema must still
+        // accept a richer payload. Round-trip a fully-populated event and
+        // verify nothing is dropped.
+        let original = DictationStatusEvent {
+            status: DictationStatus::Listening,
+            level: Some(0.75),
+            message: Some("captured".to_owned()),
+        };
+        let json = serde_json::to_string(&original).unwrap();
+        let back: DictationStatusEvent = serde_json::from_str(&json).unwrap();
+        assert_eq!(back.status, DictationStatus::Listening);
+        assert_eq!(back.level, Some(0.75));
+        assert_eq!(back.message.as_deref(), Some("captured"));
     }
 }

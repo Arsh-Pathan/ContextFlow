@@ -35,4 +35,13 @@ tracing     = { workspace = true }
 windows = { workspace = true, optional = true }
 
 [dev-dependencies]
-tokio = { workspace = true, features = ["macros", "rt-multi-thread", "test-util"] }
+tokio                 = { workspace = true, features = ["macros", "rt-multi-thread", "test-util"] }
+contextflow-telemetry = { workspace = true }
+
+# `cargo build --workspace` without `--features provider-windows` should not
+# attempt to compile the WinRT smoke test (it would fail at the `providers::`
+# import). `required-features` makes cargo skip this example unless the
+# feature is on.
+[[example]]
+name              = "windows_sr_smoke"
+required-features = ["provider-windows"]

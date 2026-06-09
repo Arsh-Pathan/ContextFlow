@@ -23,6 +23,16 @@ pub struct ProviderCapabilities {
     pub auto_language: bool,
     /// Whether the provider uses the GPU (advisory; not a guarantee).
     pub gpu_capable: bool,
+    /// Whether the provider opens its own microphone (true for Windows.Media.SpeechRecognition).
+    ///
+    /// When true, the orchestrator should ignore [`SpeechSession::audio_sink`]
+    /// for transcription purposes — the provider gets its own audio from the
+    /// OS. The orchestrator still drives our [`crate::AudioFrame`] pipeline
+    /// so the UI meter and VAD-based silence cutoffs keep working; we just
+    /// don't push PCM to the provider. Local providers (whisper.cpp,
+    /// faster-whisper) and cloud providers (Deepgram, OpenAI) all set this
+    /// to false and consume our PCM.
+    pub feeds_own_audio: bool,
 }
 
 /// Per-session configuration handed to the provider at `start_session` time.

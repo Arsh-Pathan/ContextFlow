@@ -1,39 +1,12 @@
 import type { CSSProperties } from "react";
 
-/**
- * The floating dictation bubble.
- *
- * Visual states (Slice 1):
- *   - idle       : subtle pulse, indicates the app is alive and listening for the hotkey
- *   - listening  : the user is holding the hotkey and audio is being captured;
- *                  the inner dot pulses with the live RMS level when provided
- *   - processing : audio capture ended, transcription / injection in flight
- *   - error      : last session failed; hover reveals the underlying cause
- *
- * Drives off `DictationStatusEvent` payloads from `dictation://status` — see
- * `ipc.ts`. `level` is honored during the `listening` state; it lifts the
- * inner dot's scale and brightness so the bubble visibly reacts to speech.
- *
- * The bubble lives in a frameless, transparent, always-on-top Tauri window
- * sized to 40 × 40 px. See `apps/desktop/src-tauri/tauri.conf.json`.
- */
-
 export type DictationStatus = "idle" | "listening" | "processing" | "error";
 
 interface BubbleProps {
   status: DictationStatus;
-  /** Live RMS level in 0..=1; only used when `status === "listening"`. */
   level?: number;
-  /** Tooltip text; populated by `error` events. */
   message?: string;
 }
-
-const STATUS_STYLES: Record<DictationStatus, string> = {
-  idle: "bg-white/15 animate-pulse-slow",
-  listening: "bg-emerald-400/80 shadow-[0_0_24px_4px_rgba(52,211,153,0.55)]",
-  processing: "bg-sky-400/80 shadow-[0_0_24px_4px_rgba(56,189,248,0.55)] animate-pulse",
-  error: "bg-rose-500/80 shadow-[0_0_24px_4px_rgba(244,63,94,0.55)]",
-};
 
 const STATUS_LABEL: Record<DictationStatus, string> = {
   idle: "Idle",
@@ -42,15 +15,26 @@ const STATUS_LABEL: Record<DictationStatus, string> = {
   error: "Error",
 };
 
-/**
- * Scale the inner dot from baseline 1.0 up to 1.6 at peak (RMS == 1.0).
- * Real speech rarely exceeds ~0.3 RMS, so we apply a gentle gain so the
- * effect is visible without a screaming mic.
- */
+// Extremely premium inner glow and border combinations
+const OUTER_STYLES: Record<DictationStatus, string> = {
+  idle: "border-white/10 shadow-[inset_0_0_12px_rgba(255,255,255,0.05),0_4px_12px_rgba(0,0,0,0.5)]",
+  listening: "border-emerald-400/50 shadow-[inset_0_0_15px_rgba(52,211,153,0.4),0_0_20px_rgba(52,211,153,0.3)]",
+  processing: "border-sky-400/50 shadow-[inset_0_0_15px_rgba(56,189,248,0.4),0_0_20px_rgba(56,189,248,0.3)] animate-pulse",
+  error: "border-rose-500/50 shadow-[inset_0_0_15px_rgba(244,63,94,0.4),0_0_20px_rgba(244,63,94,0.3)]",
+};
+
+// Gorgeous vibrant gradients for the core
+const CORE_STYLES: Record<DictationStatus, string> = {
+  idle: "bg-gradient-to-tr from-white/10 to-white/30 backdrop-blur-md opacity-60",
+  listening: "bg-gradient-to-tr from-emerald-500 to-teal-300 shadow-[0_0_20px_rgba(52,211,153,0.8)]",
+  processing: "bg-gradient-to-tr from-sky-500 to-indigo-400 shadow-[0_0_20px_rgba(56,189,248,0.8)] animate-spin",
+  error: "bg-gradient-to-tr from-rose-600 to-orange-400 shadow-[0_0_20px_rgba(244,63,94,0.8)]",
+};
+
 function listeningScale(level: number | undefined): number {
   if (level === undefined || level <= 0) return 1;
-  const gained = Math.min(1, level * 3); // gain ×3 → roughly maps 0..0.33 to 0..1
-  return 1 + gained * 0.6;
+  const gained = Math.min(1, level * 2.5);
+  return 1 + gained * 0.8;
 }
 
 export function Bubble({ status, level, message }: BubbleProps) {
@@ -67,11 +51,17 @@ export function Bubble({ status, level, message }: BubbleProps) {
       role="status"
       aria-label={ariaLabel}
       title={status === "error" && message ? message : STATUS_LABEL[status]}
-      className="bubble-surface w-10 h-10 flex items-center justify-center"
+      className={`relative w-10 h-10 flex items-center justify-center rounded-full border transition-all duration-300 ease-out bg-black/40 backdrop-blur-2xl ${OUTER_STYLES[status]}`}
       data-status={status}
     >
+      {/* Decorative spinning ring for processing state */}
+      {status === "processing" && (
+        <div className="absolute inset-0 rounded-full border-t-2 border-r-2 border-sky-300/80 animate-[spin_1s_linear_infinite]" />
+      )}
+      
+      {/* The inner core dot */}
       <div
-        className={`w-3 h-3 rounded-full transition-transform duration-75 ease-out ${STATUS_STYLES[status]}`}
+        className={`w-3 h-3 rounded-full transition-all duration-75 ease-out ${CORE_STYLES[status]}`}
         style={dotStyle}
       />
     </div>

@@ -1,0 +1,14 @@
+# Pin the project to the MSVC toolchain on Windows.
+#
+# Tauri's officially supported Windows target is x86_64-pc-windows-msvc.
+# The GNU/MinGW toolchain breaks on transitive deps (parking_lot_core,
+# windows-sys) that expect MSVC's link.exe rather than dlltool.exe.
+#
+# Contributors who run `rustup show` in this directory will be prompted to
+# install this toolchain automatically.
+
+[toolchain]
+channel = "stable"
+targets = ["x86_64-pc-windows-msvc"]
+profile = "default"
+components = ["rustfmt", "clippy"]

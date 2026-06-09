@@ -11,7 +11,7 @@ use crate::session::SpeechSession;
 /// The dictation orchestrator uses these to filter providers by user
 /// settings (e.g. "only local providers") and to decide whether features
 /// like streaming partials are usable.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ProviderCapabilities {
     /// Whether the provider streams partial transcripts before the final result.
     pub streaming_partials: bool,
@@ -23,18 +23,6 @@ pub struct ProviderCapabilities {
     pub auto_language: bool,
     /// Whether the provider uses the GPU (advisory; not a guarantee).
     pub gpu_capable: bool,
-}
-
-impl Default for ProviderCapabilities {
-    fn default() -> Self {
-        Self {
-            streaming_partials: false,
-            network_required: false,
-            whisper_mode: false,
-            auto_language: false,
-            gpu_capable: false,
-        }
-    }
 }
 
 /// Per-session configuration handed to the provider at `start_session` time.

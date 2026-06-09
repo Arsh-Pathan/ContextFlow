@@ -104,6 +104,10 @@ too_many_lines           = "allow"
 cast_precision_loss      = "allow"
 cast_possible_truncation = "allow"
 cast_sign_loss           = "allow"
+# Our product name "ContextFlow" appears in prose; we don't backtick it every time.
+doc_markdown             = "allow"
+# Capability/flag structs legitimately carry several bools; that's not a smell.
+struct_excessive_bools   = "allow"
 
 [profile.dev]
 opt-level = 1   # cpal + audio is unusably slow at opt-level 0

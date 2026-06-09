@@ -1,0 +1,164 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+  workflow_dispatch:
+
+# Cancel in-progress runs for the same branch when a new commit lands.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  RUSTFLAGS: "-D warnings"
+  RUST_BACKTRACE: short
+
+jobs:
+  # ───────────────────────────────────────────────────────────────────────
+  # Rust workspace: format, lint, check, test.
+  # Windows only — ContextFlow is a Windows product.
+  # ───────────────────────────────────────────────────────────────────────
+  rust:
+    name: Rust (${{ matrix.toolchain }})
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        toolchain: [stable]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ matrix.toolchain }}
+          components: rustfmt, clippy
+
+      - name: Cache cargo registry + target
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: rust-${{ matrix.toolchain }}
+
+      - name: cargo fmt --check
+        run: cargo fmt --all -- --check
+
+      - name: cargo check
+        run: cargo check --workspace --all-targets
+
+      - name: cargo clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: cargo test
+        run: cargo test --workspace --all-targets --no-fail-fast
+
+  # ───────────────────────────────────────────────────────────────────────
+  # Frontend: lint, typecheck, build.
+  # Runs on the same Windows image so we exercise the real target platform.
+  # ───────────────────────────────────────────────────────────────────────
+  frontend:
+    name: Frontend
+    runs-on: windows-latest
+    # Skip until apps/desktop exists. Re-enabled in the Tauri-scaffold commit.
+    if: ${{ hashFiles('apps/desktop/package.json') != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: pnpm install
+        run: pnpm install --frozen-lockfile
+
+      - name: pnpm lint
+        run: pnpm lint
+
+      - name: pnpm typecheck
+        run: pnpm typecheck
+
+      - name: pnpm build
+        run: pnpm build
+
+  # ───────────────────────────────────────────────────────────────────────
+  # Tauri build validation: produces an unsigned bundle to catch packaging
+  # regressions on every PR. Doesn't upload the artifact.
+  # ───────────────────────────────────────────────────────────────────────
+  tauri-build:
+    name: Tauri bundle validation
+    runs-on: windows-latest
+    needs: [rust, frontend]
+    if: ${{ hashFiles('apps/desktop/src-tauri/Cargo.toml') != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: tauri-build
+          workspaces: 'apps/desktop/src-tauri -> target'
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: pnpm install
+        run: pnpm install --frozen-lockfile
+
+      - name: tauri build (no bundle)
+        run: pnpm tauri build --no-bundle
+
+  # ───────────────────────────────────────────────────────────────────────
+  # Conventional Commits check on PR titles.
+  # ───────────────────────────────────────────────────────────────────────
+  commit-lint:
+    name: Conventional commits
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            perf
+            refactor
+            docs
+            test
+            build
+            ci
+            chore
+            style
+          scopes: |
+            audio
+            speech
+            injection
+            dictation
+            context
+            ai
+            hotkey
+            settings
+            telemetry
+            ui
+            shell
+            installer
+            ci
+            repo
+          requireScope: false

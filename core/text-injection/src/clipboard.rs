@@ -2,7 +2,7 @@ use std::mem::size_of;
 use std::time::Duration;
 
 use async_trait::async_trait;
-use tracing::{debug, warn};
+
 use windows::Win32::UI::Input::KeyboardAndMouse::{
     SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_KEYUP, VK_CONTROL,
     VIRTUAL_KEY,

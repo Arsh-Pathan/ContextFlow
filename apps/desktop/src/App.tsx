@@ -128,11 +128,20 @@ export function App() {
   // Hide it when idle to stay out of the user's way.
   useEffect(() => {
     const win = getCurrentWindow();
+    let timeoutId: number;
+
     if (state.status === "idle") {
-      win.hide().catch((err) => console.warn("Failed to hide window:", err));
+      // Delay hiding the window so the fade-out/shrink animation can play
+      timeoutId = window.setTimeout(() => {
+        win.hide().catch((err) => console.warn("Failed to hide window:", err));
+      }, 400);
     } else {
       win.show().catch((err) => console.warn("Failed to show window:", err));
     }
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [state.status]);
 
   return (

@@ -128,12 +128,15 @@ export function Bubble({ status, level, message, provider, warning }: BubbleProp
     spinDuration = "0s"; // Stop spinning on error
   }
 
+  const isExpanded = status !== "idle";
+  const wrapperClass = isExpanded ? "w-[180px] opacity-100" : "w-[44px] opacity-0";
+
   return (
     <div
       role="status"
       aria-label={ariaLabel}
       title={tooltip}
-      className={`relative w-[180px] h-[44px] rounded-[22px] overflow-hidden p-[2px] transition-shadow duration-300 ${shadowClass}`}
+      className={`relative h-[44px] rounded-[22px] overflow-hidden p-[2px] transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] ${wrapperClass} ${shadowClass}`}
       data-status={status}
     >
       <style>{`
@@ -168,9 +171,10 @@ export function Bubble({ status, level, message, provider, warning }: BubbleProp
       />
 
       {/* Inner Content Box */}
-      <div className="relative w-full h-full flex items-center justify-between px-3 rounded-[20px] bg-[#1a1a1a]">
+      <div className="relative w-full h-full rounded-[20px] bg-[#1a1a1a]">
+        
         {/* Left Icon (Logo) */}
-        <div className={`flex items-center justify-center w-7 h-7 rounded-full overflow-hidden transition-all duration-300 ${
+        <div className={`absolute left-2.5 top-1/2 -translate-y-1/2 flex items-center justify-center w-7 h-7 rounded-full overflow-hidden transition-all duration-300 ${
           status === "listening" ? "drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] scale-110" 
           : status === "processing" ? "drop-shadow-[0_0_8px_rgba(56,189,248,0.6)]"
           : status === "error" ? "grayscale"
@@ -180,14 +184,14 @@ export function Bubble({ status, level, message, provider, warning }: BubbleProp
         </div>
 
         {/* Middle Audio Visualizer Dots */}
-        <div className="flex gap-[5px] items-center justify-center flex-1 mx-2 h-6">
+        <div className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex gap-[5px] items-center justify-center h-6 transition-opacity duration-300 ${isExpanded ? "opacity-100" : "opacity-0"}`}>
           {dots}
         </div>
 
         {/* Warning indicator */}
         {warning && (
           <div
-            className="w-3.5 h-3.5 rounded-full bg-amber-500 flex items-center justify-center shrink-0"
+            className="absolute right-10 top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-amber-500 flex items-center justify-center shrink-0"
             title={warning}
           >
             <span className="text-black text-[10px] font-bold leading-none">!</span>
@@ -197,7 +201,7 @@ export function Bubble({ status, level, message, provider, warning }: BubbleProp
         {/* Right Icon (Close Button) */}
         <button
           onClick={handleClose}
-          className="flex items-center justify-center w-6 h-6 rounded-full bg-white/5 text-gray-400 hover:text-white hover:bg-white/15 transition-all duration-200"
+          className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-6 rounded-full bg-white/5 text-gray-400 hover:text-white hover:bg-white/15 transition-all duration-200"
         >
           <X size={14} strokeWidth={2.5} />
         </button>

@@ -55,7 +55,7 @@ export function Bubble({ status, level, message }: BubbleProps) {
     return (
       <div
         key={i}
-        className={`w-1.5 rounded-full transition-transform duration-100 ease-out origin-center ${
+        className={`w-1.5 rounded-full transition-all duration-300 ease-in-out origin-center ${
           status === "processing" 
             ? "h-1.5 bg-sky-400" 
             : status === "error"

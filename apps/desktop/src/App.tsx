@@ -18,7 +18,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { getCurrentWindow } from "@tauri-apps/api/window";
+import { getCurrentWindow, LogicalPosition, currentMonitor } from "@tauri-apps/api/window";
 
 import { Bubble, type DictationStatus } from "./components/Bubble";
 import { subscribeDictationStatus, type DictationStatusEvent } from "./ipc";
@@ -100,6 +100,24 @@ export function App() {
     return () => {
       delete (window as DebugWindow).__contextflow_setStatus;
     };
+  }, []);
+
+  // Center the window at the bottom of the screen on load
+  useEffect(() => {
+    const win = getCurrentWindow();
+    currentMonitor().then((monitor) => {
+      if (monitor) {
+        const scaleFactor = monitor.scaleFactor;
+        const logicalWidth = monitor.size.width / scaleFactor;
+        const logicalHeight = monitor.size.height / scaleFactor;
+        
+        // Window is 180px wide. Bottom offset is 60px.
+        const x = (logicalWidth - 180) / 2;
+        const y = logicalHeight - 60 - 44; // 60px from bottom, 44px is height
+        
+        win.setPosition(new LogicalPosition(x, y)).catch(console.warn);
+      }
+    }).catch(console.warn);
   }, []);
 
   // Show the window only when active (listening, processing, error)

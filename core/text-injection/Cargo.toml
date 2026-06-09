@@ -15,7 +15,13 @@ workspace = true
 async-trait = { workspace = true }
 serde       = { workspace = true }
 thiserror   = { workspace = true }
+tokio       = { workspace = true }
 tracing     = { workspace = true }
 
-# Slice 1: SendInput Unicode via `windows` crate. Slice 3: UIA.
-# Wired once toolchain is ready.
+# Slice 1 ships SendInput Unicode via the `windows` crate.
+# Slice 3 will additionally pull in UI Automation paths.
+windows = { workspace = true }
+
+[dev-dependencies]
+tokio                 = { workspace = true, features = ["macros", "rt-multi-thread", "test-util"] }
+contextflow-telemetry = { workspace = true }

@@ -32,8 +32,9 @@ use contextflow_text_injection::ClipboardInjector;
 
 use crate::hotkey_bridge::HotkeyBridge;
 
-/// Application entry point. Called from `main.rs` so the binary stays a thin
-/// shim and the real bootstrap is testable from integration tests.
+use tauri_plugin_autostart::ManagerExt;
+
+// Application entry point...
 pub fn run() {
     contextflow_telemetry::install_dev_subscriber();
     info!("ContextFlow desktop starting");
@@ -42,19 +43,26 @@ pub fn run() {
     let hotkey_rx = hotkey_bus.subscribe();
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, Some(vec![])))
         .plugin(build_global_shortcut_plugin(hotkey_bus.sender()))
         .manage(hotkey_bus)
         .setup(move |app| {
+            // Enable autostart
+            let autostart_manager = app.autolaunch();
+            if let Err(e) = autostart_manager.enable() {
+                tracing::warn!("Failed to enable autostart: {}", e);
+            }
+
             build_tray(app)?;
             register_ptt_shortcut(app)?;
-            
+
             // DictationEngine::start calls tokio::spawn, which requires a Tokio context.
             // Tauri setup runs synchronously on the main thread, so we enter the runtime context
             // by using block_on.
             let handle = tauri::async_runtime::block_on(async {
                 start_dictation_engine(app.handle().clone(), hotkey_rx).await
             });
-            
+
             // Stash the handle in Tauri state so a future `quit` path can
             // call `.abort()`. For slice 1 the engine simply runs until the
             // process exits.
@@ -68,38 +76,49 @@ pub fn run() {
 /// New-type wrapper so the `DictationHandle` can live in Tauri's state map.
 struct DictationOrchestrator(#[allow(dead_code)] DictationHandle);
 
-async fn ensure_model_exists<R: tauri::Runtime>(app: &AppHandle<R>) -> anyhow::Result<std::path::PathBuf> {
-    let app_data = app.path().app_data_dir().map_err(|e| anyhow::anyhow!("Failed to get app data dir: {}", e))?;
+async fn ensure_model_exists<R: tauri::Runtime>(
+    app: &AppHandle<R>,
+) -> anyhow::Result<std::path::PathBuf> {
+    let app_data = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| anyhow::anyhow!("Failed to get app data dir: {}", e))?;
     std::fs::create_dir_all(&app_data)?;
     let model_path = app_data.join("ggml-large-v3-turbo.bin");
-    
+
     if model_path.exists() {
         return Ok(model_path);
     }
-    
+
     // Check if model is bundled as a Tauri resource
     if let Ok(resource_dir) = app.path().resource_dir() {
         let bundled = resource_dir.join("ggml-large-v3-turbo.bin");
         if bundled.exists() {
-            info!("Copying bundled model from {:?} to {:?}", bundled, model_path);
+            info!(
+                "Copying bundled model from {:?} to {:?}",
+                bundled, model_path
+            );
             std::fs::copy(&bundled, &model_path)?;
             return Ok(model_path);
         }
     }
-    
-    info!("Model not found at {:?}, downloading from HuggingFace...", model_path);
+
+    info!(
+        "Model not found at {:?}, downloading from HuggingFace...",
+        model_path
+    );
     let url = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo.bin";
-    
+
     let mut response = reqwest::get(url).await?;
     if !response.status().is_success() {
         anyhow::bail!("Failed to download model: {}", response.status());
     }
-    
+
     let mut file = tokio::fs::File::create(&model_path).await?;
     while let Some(chunk) = response.chunk().await? {
         tokio::io::AsyncWriteExt::write_all(&mut file, &chunk).await?;
     }
-    
+
     info!("Model downloaded successfully to {:?}", model_path);
     Ok(model_path)
 }
@@ -121,10 +140,13 @@ async fn start_dictation_engine<R: tauri::Runtime>(
             std::path::PathBuf::from("../../../ggml-large-v3-turbo.bin")
         }
     };
-    
+
     // Fall back to WindowsSpeechProvider if Whisper initialization fails (e.g. missing model)
     info!(model = ?model_path, "initializing dictation provider");
-    let (provider, provider_warning): (Arc<dyn contextflow_speech_engine::SpeechProvider>, Option<String>) = match WhisperCppProvider::new(model_path) {
+    let (provider, provider_warning): (
+        Arc<dyn contextflow_speech_engine::SpeechProvider>,
+        Option<String>,
+    ) = match WhisperCppProvider::new(model_path) {
         Ok(p) => {
             info!("Successfully initialized WhisperCppProvider");
             (Arc::new(p), None)
@@ -132,14 +154,19 @@ async fn start_dictation_engine<R: tauri::Runtime>(
         Err(e) => {
             let warning = format!("Whisper model failed to load: {e}. Falling back to Windows Speech Recognition — accuracy may be degraded.");
             error!("{warning}");
-            (Arc::new(contextflow_speech_engine::providers::windows_sr::WindowsSpeechProvider::new()), Some(warning))
+            (
+                Arc::new(
+                    contextflow_speech_engine::providers::windows_sr::WindowsSpeechProvider::new(),
+                ),
+                Some(warning),
+            )
         }
     };
     info!(provider_id = provider.id(), "dictation provider selected");
-    
+
     // Emit an initial Idle event so the bubble shows which provider is active.
-    let mut init_event = DictationStatusEvent::new(DictationStatus::Idle)
-        .with_provider(provider.id());
+    let mut init_event =
+        DictationStatusEvent::new(DictationStatus::Idle).with_provider(provider.id());
     if let Some(ref w) = provider_warning {
         init_event = init_event.with_warning(w);
     }

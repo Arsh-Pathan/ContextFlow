@@ -14,8 +14,8 @@
       {
         "label": "bubble",
         "title": "ContextFlow",
-        "width": 96,
-        "height": 96,
+        "width": 40,
+        "height": 40,
         "resizable": false,
         "decorations": false,
         "transparent": true,
@@ -24,9 +24,7 @@
         "focus": false,
         "shadow": false,
         "visible": true,
-        "center": false,
-        "x": 1700,
-        "y": 950
+        "center": true
       }
     ],
     "security": {

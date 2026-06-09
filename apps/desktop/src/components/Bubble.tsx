@@ -36,11 +36,11 @@ export function Bubble({ status }: BubbleProps) {
     <div
       role="status"
       aria-label={`ContextFlow: ${STATUS_LABEL[status]}`}
-      className="bubble-surface w-20 h-20 flex items-center justify-center"
+      className="bubble-surface w-10 h-10 flex items-center justify-center"
       data-status={status}
     >
       <div
-        className={`w-6 h-6 rounded-full transition-colors duration-150 ${STATUS_STYLES[status]}`}
+        className={`w-3 h-3 rounded-full transition-colors duration-150 ${STATUS_STYLES[status]}`}
       />
     </div>
   );

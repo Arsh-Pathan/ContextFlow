@@ -15,6 +15,6 @@
 @layer components {
   .bubble-surface {
     @apply rounded-full bg-bubble-bg border border-bubble-border backdrop-blur-xl
-           shadow-[0_8px_32px_rgba(0,0,0,0.45)];
+           shadow-[0_2px_8px_rgba(0,0,0,0.4)];
   }
 }

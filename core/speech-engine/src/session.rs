@@ -53,6 +53,13 @@ impl AudioSink {
             .map_err(|_| SpeechError::SinkClosed)
     }
 
+    /// Synchronously push a frame (for use in spawn_blocking).
+    pub fn push_blocking(&self, frame: AudioFrame) -> Result<(), SpeechError> {
+        self.inner
+            .blocking_send(frame)
+            .map_err(|_| SpeechError::SinkClosed)
+    }
+
     /// Close the sink, signalling end-of-utterance. After this the session
     /// will emit a `Final` event and the event stream will end.
     pub fn close(self) {

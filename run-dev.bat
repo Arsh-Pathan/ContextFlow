@@ -1,0 +1,9 @@
+@echo off
+echo Setting up Visual Studio C++ Environment...
+call "C:\Program Files\Microsoft Visual Studio\18\Community\VC\Auxiliary\Build\vcvars64.bat"
+
+echo Cleaning broken bindings...
+cargo clean -p whisper-rs-sys
+
+echo Starting Tauri Dev Server...
+pnpm tauri dev

@@ -14,9 +14,12 @@ pub mod session;
 
 // Concrete providers live behind crate features so an unfinished or
 // unavailable backend cannot accidentally be linked into a release build.
-#[cfg(feature = "provider-windows")]
 pub mod providers {
+    #[cfg(feature = "provider-windows")]
     pub mod windows_sr;
+
+    #[cfg(feature = "provider-whisper-cpp")]
+    pub mod whisper_cpp;
 }
 
 pub use error::SpeechError;

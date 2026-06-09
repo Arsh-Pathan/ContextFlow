@@ -31,7 +31,9 @@ use crate::error::DictationError;
 /// giving up and emitting `NoTranscript`. The Windows recognizer usually
 /// flushes its final within ~250 ms of `StopAsync`; 1500 ms is comfortably
 /// past that and still well under "the user reaches for the mouse".
-const FINAL_TIMEOUT: Duration = Duration::from_millis(1500);
+// 1.5s was too aggressive for Windows SR which can take up to 4-5s to finalize
+// transcripts especially if it is using the cloud or there is background noise.
+const FINAL_TIMEOUT: Duration = Duration::from_millis(5000);
 
 /// Rate at which we re-emit `Listening { level }` events so the bubble
 /// pulse looks lively without flooding Tauri's event channel.
@@ -219,12 +221,18 @@ impl ActiveSession {
             let _ = tokio::time::timeout(Duration::from_millis(100), handle).await;
         }
 
-        let final_text = wait_for_final(&mut self.speech, FINAL_TIMEOUT).await?;
+        // Destructure SpeechSession to drop the audio sink immediately.
+        // This signals "end of utterance" to the provider so it can flush
+        // the final transcript without waiting for a natural pause.
+        let contextflow_speech_engine::SpeechSession { audio_sink, mut events } = self.speech;
+        drop(audio_sink);
 
-        // Drop the speech session before injection — provider's StopAsync
+        let final_text = wait_for_final(&mut events, FINAL_TIMEOUT).await?;
+
+        // Drop the events stream before injection — provider's StopAsync
         // can take ~100 ms on Windows, and we'd rather pay it in parallel
         // with the SendInput call than serialise.
-        drop(self.speech);
+        drop(events);
 
         let trimmed = final_text.trim();
         if trimmed.is_empty() {
@@ -274,10 +282,14 @@ async fn start_session(
     // Audio capture for the bubble's level meter. cpal's `Stream` is `!Send`,
     // so we can't hold an `AudioEngine` across awaits on a multi-thread
     // runtime. Instead a dedicated task owns the engine: it starts it,
-    // drives the RMS pump, and drops the engine when we ask it to. We
-    // hold only a `oneshot::Sender<()>` and the task's JoinHandle.
+    let mut audio_sink = if !provider.capabilities().feeds_own_audio {
+        Some(speech.audio_sink.clone())
+    } else {
+        None
+    };
+
     let (stop_tx, stop_rx) = tokio::sync::oneshot::channel::<()>();
-    let (audio_task, level_task) = spawn_audio_owner(stop_rx, emit.clone());
+    let (audio_task, level_task) = spawn_audio_owner(stop_rx, emit.clone(), audio_sink);
 
     debug!(
         startup_ms = started_at.elapsed().as_millis() as u64,
@@ -302,6 +314,7 @@ async fn start_session(
 fn spawn_audio_owner(
     stop_rx: tokio::sync::oneshot::Receiver<()>,
     emit: StatusEmitter,
+    audio_sink: Option<contextflow_speech_engine::session::AudioSink>,
 ) -> (JoinHandle<()>, JoinHandle<()>) {
     // The level broadcast channel lives outside the audio task so we can
     // hand a Receiver to the level-pump task before the engine starts.
@@ -334,10 +347,21 @@ fn spawn_audio_owner(
             }
         };
         let mut levels = engine.subscribe_levels();
+        let mut frames = audio_sink.as_ref().map(|_| engine.subscribe_frames());
         loop {
             if block_stop_rx.try_recv().is_ok() {
                 break;
             }
+            
+            // Forward any available audio frames to the speech provider's sink
+            if let Some(ref mut rx) = frames {
+                while let Ok(frame) = rx.try_recv() {
+                    if let Some(ref sink) = audio_sink {
+                        let _ = sink.push_blocking(frame.samples);
+                    }
+                }
+            }
+
             match levels.try_recv() {
                 Ok(v) => {
                     // Best-effort forward to the async side; if the
@@ -401,7 +425,7 @@ fn spawn_audio_owner(
 /// dropped — slice 1 doesn't show them in the UI. Errors from the session
 /// surface immediately.
 async fn wait_for_final(
-    session: &mut SpeechSession,
+    events: &mut futures::stream::BoxStream<'static, TranscriptEvent>,
     timeout: Duration,
 ) -> Result<String, DictationError> {
     let deadline = Instant::now() + timeout;
@@ -412,7 +436,7 @@ async fn wait_for_final(
                 timeout_ms: timeout.as_millis() as u64,
             });
         }
-        let next = tokio::time::timeout(remaining, session.events.next()).await;
+        let next = tokio::time::timeout(remaining, events.next()).await;
         match next {
             Err(_elapsed) => {
                 return Err(DictationError::NoTranscript {

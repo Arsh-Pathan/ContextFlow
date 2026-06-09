@@ -113,16 +113,19 @@ impl SpeechProvider for WindowsSpeechProvider {
         let (events_tx, events_rx) = mpsc::channel::<TranscriptEvent>(EVENT_CHANNEL_CAPACITY);
 
         // Channel from the dropped session back to the recognizer thread.
-        let (stop_tx, stop_rx) = oneshot::channel::<()>();
+        let (stop_tx, stop_rx) = mpsc::channel::<()>(2);
 
         // Audio sink: the provider feeds its own audio, but we still accept
         // and drain frames the orchestrator pushes — that keeps the trait
         // contract honest and avoids back-pressuring the audio pipeline.
         let (sink_tx, mut sink_rx) = mpsc::channel::<Vec<i16>>(SINK_CHANNEL_CAPACITY);
+        let stop_tx_for_sink = stop_tx.clone();
         tokio::spawn(async move {
             // Drain until the orchestrator drops its end. We don't do anything
             // with the audio — see module-level `feeds_own_audio` docs.
             while sink_rx.recv().await.is_some() {}
+            // Sink closed (utterance ended). Tell the recognizer to stop and flush.
+            let _ = stop_tx_for_sink.try_send(());
         });
 
         // Synchronously confirm the recognizer initialized before returning
@@ -180,14 +183,14 @@ impl SpeechProvider for WindowsSpeechProvider {
 /// itself because consumers tend to hold the stream long after they've
 /// stopped touching the session struct.
 struct WinSrSessionGuard {
-    stop_tx: Option<oneshot::Sender<()>>,
+    stop_tx: Option<mpsc::Sender<()>>,
 }
 
 impl Drop for WinSrSessionGuard {
     fn drop(&mut self) {
         if let Some(tx) = self.stop_tx.take() {
             // If send fails the worker already exited — fine either way.
-            let _ = tx.send(());
+            let _ = tx.try_send(());
         }
     }
 }
@@ -215,7 +218,7 @@ fn recognizer_worker(
     emit_partials: bool,
     events_tx: mpsc::Sender<TranscriptEvent>,
     init_tx: oneshot::Sender<Result<(), SpeechError>>,
-    stop_rx: oneshot::Receiver<()>,
+    stop_rx: mpsc::Receiver<()>,
 ) {
     // `Recognizer` and `ContinuousRecognitionSession` are WinRT objects; they
     // are RC'd via IInspectable internally. Calls into the runtime require
@@ -473,7 +476,7 @@ fn map_start_error(e: &windows::core::Error) -> SpeechError {
 fn run_recognizer_loop(
     handles: RecognizerHandles,
     completed_flag: Arc<std::sync::atomic::AtomicBool>,
-    stop_rx: oneshot::Receiver<()>,
+    stop_rx: mpsc::Receiver<()>,
 ) -> Result<(), SpeechError> {
     // Block on the stop signal OR a Completed event from WinRT. We poll on
     // a short interval rather than using `blocking_recv` so we don't need
@@ -488,8 +491,8 @@ fn run_recognizer_loop(
             return Ok(());
         }
         match stop_rx.try_recv() {
-            Ok(()) | Err(oneshot::error::TryRecvError::Closed) => break,
-            Err(oneshot::error::TryRecvError::Empty) => {
+            Ok(()) | Err(tokio::sync::mpsc::error::TryRecvError::Disconnected) => break,
+            Err(tokio::sync::mpsc::error::TryRecvError::Empty) => {
                 std::thread::sleep(std::time::Duration::from_millis(50));
             }
         }

@@ -27,7 +27,7 @@ use tracing::{error, info};
 use contextflow_dictation_engine::{DictationEngine, DictationHandle, StatusEmitter};
 use contextflow_hotkey::HotkeyBus;
 use contextflow_ipc_contracts::{DictationStatusEvent, EVENT_DICTATION_STATUS};
-use contextflow_speech_engine::providers::windows_sr::WindowsSpeechProvider;
+use contextflow_speech_engine::providers::whisper_cpp::WhisperCppProvider;
 use contextflow_text_injection::SendInputInjector;
 
 use crate::hotkey_bridge::HotkeyBridge;
@@ -47,7 +47,14 @@ pub fn run() {
         .setup(move |app| {
             build_tray(app)?;
             register_ptt_shortcut(app)?;
-            let handle = start_dictation_engine(app.handle().clone(), hotkey_rx);
+            
+            // DictationEngine::start calls tokio::spawn, which requires a Tokio context.
+            // Tauri setup runs synchronously on the main thread, so we enter the runtime context
+            // by using block_on.
+            let handle = tauri::async_runtime::block_on(async {
+                start_dictation_engine(app.handle().clone(), hotkey_rx).await
+            });
+            
             // Stash the handle in Tauri state so a future `quit` path can
             // call `.abort()`. For slice 1 the engine simply runs until the
             // process exits.
@@ -61,16 +68,62 @@ pub fn run() {
 /// New-type wrapper so the `DictationHandle` can live in Tauri's state map.
 struct DictationOrchestrator(#[allow(dead_code)] DictationHandle);
 
-/// Spin up the dictation orchestrator with the slice-1 backends:
-///   * `WindowsSpeechProvider` for transcription (Windows.Media.SpeechRecognition).
+async fn ensure_model_exists<R: tauri::Runtime>(app: &AppHandle<R>) -> anyhow::Result<std::path::PathBuf> {
+    let app_data = app.path().app_data_dir().map_err(|e| anyhow::anyhow!("Failed to get app data dir: {}", e))?;
+    std::fs::create_dir_all(&app_data)?;
+    let model_path = app_data.join("ggml-tiny.en.bin");
+    
+    if model_path.exists() {
+        return Ok(model_path);
+    }
+    
+    info!("Model not found at {:?}, downloading from HuggingFace...", model_path);
+    let url = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.en.bin";
+    
+    let mut response = reqwest::get(url).await?;
+    if !response.status().is_success() {
+        anyhow::bail!("Failed to download model: {}", response.status());
+    }
+    
+    let mut file = tokio::fs::File::create(&model_path).await?;
+    while let Some(chunk) = response.chunk().await? {
+        tokio::io::AsyncWriteExt::write_all(&mut file, &chunk).await?;
+    }
+    
+    info!("Model downloaded successfully to {:?}", model_path);
+    Ok(model_path)
+}
+
+/// Spin up the dictation orchestrator with the slice-2 backends:
+///   * `WhisperCppProvider` for transcription (whisper-rs).
 ///   * `SendInputInjector` for typing the final transcript into the focused window.
 ///   * A status-emit closure that forwards every `DictationStatusEvent`
 ///     to the bubble UI via the same Tauri event channel the hotkey bridge uses.
-fn start_dictation_engine<R: tauri::Runtime>(
+async fn start_dictation_engine<R: tauri::Runtime>(
     app: AppHandle<R>,
     hotkey_rx: contextflow_hotkey::HotkeyReceiver,
 ) -> DictationHandle {
-    let provider = Arc::new(WindowsSpeechProvider::new());
+    // Ensure the model exists in the app data directory, downloading it if necessary
+    let model_path = match ensure_model_exists(&app).await {
+        Ok(path) => path,
+        Err(e) => {
+            error!("Failed to ensure model exists: {e}. Falling back to default path.");
+            std::path::PathBuf::from("../../../ggml-tiny.en.bin")
+        }
+    };
+    
+    // Fall back to WindowsSpeechProvider if Whisper initialization fails (e.g. missing model)
+    let provider: Arc<dyn contextflow_speech_engine::SpeechProvider> = match WhisperCppProvider::new(model_path) {
+        Ok(p) => {
+            info!("Successfully initialized WhisperCppProvider");
+            Arc::new(p)
+        }
+        Err(e) => {
+            error!("Failed to initialize WhisperCppProvider: {e}. Falling back to WindowsSpeechProvider.");
+            Arc::new(contextflow_speech_engine::providers::windows_sr::WindowsSpeechProvider::new())
+        }
+    };
+    
     let injector = Arc::new(SendInputInjector::new());
 
     let emit: StatusEmitter = Arc::new(move |event: DictationStatusEvent| {
@@ -79,7 +132,7 @@ fn start_dictation_engine<R: tauri::Runtime>(
         }
     });
 
-    info!("starting dictation orchestrator (slice 1: Windows SR + SendInput)");
+    info!("starting dictation orchestrator");
     DictationEngine::start(hotkey_rx, provider, injector, emit)
 }
 

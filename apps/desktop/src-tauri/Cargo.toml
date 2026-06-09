@@ -30,13 +30,14 @@ serde        = { workspace = true }
 serde_json   = { workspace = true }
 tokio        = { workspace = true }
 tracing      = { workspace = true }
+reqwest      = { workspace = true }
 
 # Internal crates
 contextflow-telemetry        = { workspace = true }
 contextflow-ipc-contracts    = { workspace = true }
 contextflow-hotkey           = { workspace = true }
 contextflow-dictation-engine = { workspace = true }
-contextflow-speech-engine    = { workspace = true, features = ["provider-windows"] }
+contextflow-speech-engine    = { workspace = true, features = ["provider-windows", "provider-whisper-cpp"] }
 contextflow-text-injection   = { workspace = true }
 
 [features]

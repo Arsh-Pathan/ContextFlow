@@ -1,0 +1,72 @@
+{
+  "$schema": "https://schema.tauri.app/config/2.0",
+  "productName": "ContextFlow",
+  "version": "0.1.0",
+  "identifier": "dev.contextflow.desktop",
+  "build": {
+    "beforeDevCommand": "pnpm dev",
+    "beforeBuildCommand": "pnpm build",
+    "devUrl": "http://localhost:1420",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "bubble",
+        "title": "ContextFlow",
+        "width": 96,
+        "height": 96,
+        "resizable": false,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "focus": false,
+        "shadow": false,
+        "visible": true,
+        "center": false,
+        "x": 1700,
+        "y": 950
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self' tauri:; style-src 'self' 'unsafe-inline'; img-src 'self' data: tauri:; connect-src 'self' ipc: http://ipc.localhost"
+    },
+    "trayIcon": {
+      "id": "contextflow-tray",
+      "iconPath": "icons/icon.png",
+      "iconAsTemplate": false,
+      "tooltip": "ContextFlow"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis", "msi"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "publisher": "ContextFlow Contributors",
+    "shortDescription": "Your thoughts, in flow.",
+    "longDescription": "Windows-native AI voice dictation that types into every text field.",
+    "category": "Productivity",
+    "copyright": "Copyright (c) 2026 ContextFlow Contributors",
+    "licenseFile": "../../../LICENSE",
+    "resources": [],
+    "externalBin": [],
+    "windows": {
+      "wix": {
+        "language": "en-US"
+      },
+      "nsis": {
+        "installMode": "perMachine"
+      }
+    }
+  },
+  "plugins": {
+    "globalShortcut": {}
+  }
+}

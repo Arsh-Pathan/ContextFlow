@@ -1,8 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
-    # apps/desktop/src-tauri is added in the Tauri-scaffold commit once
-    # `pnpm create tauri-app` has produced the real shell.
+    "apps/desktop/src-tauri",
     "core/audio-engine",
     "core/speech-engine",
     "core/text-injection",

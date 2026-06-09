@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/contextflow.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ContextFlow</title>
+    <style>
+      /* Defaults that keep the bubble window fully transparent until React mounts. */
+      html, body, #root {
+        margin: 0;
+        padding: 0;
+        background: transparent;
+        color-scheme: dark;
+        font-family: "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+        overflow: hidden;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

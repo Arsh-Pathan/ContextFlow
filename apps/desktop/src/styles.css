@@ -1,0 +1,20 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+  /* Bubble window is transparent + click-through-able where appropriate. */
+  body {
+    background: transparent;
+  }
+}
+
+@layer components {
+  .bubble-surface {
+    @apply rounded-full bg-bubble-bg border border-bubble-border backdrop-blur-xl
+           shadow-[0_8px_32px_rgba(0,0,0,0.45)];
+  }
+}

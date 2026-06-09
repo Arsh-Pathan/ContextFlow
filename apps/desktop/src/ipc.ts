@@ -14,9 +14,10 @@ import type { DictationStatus } from "./components/Bubble";
 export const EVENT_DICTATION_STATUS = "dictation://status";
 
 /**
- * Payload of `EVENT_DICTATION_STATUS`. `level` and `message` are present
- * only when relevant to the carried status — `level` during `listening`,
- * `message` during `error`. The UI must tolerate either being absent.
+ * Payload of `EVENT_DICTATION_STATUS`. All optional fields are present
+ * only when relevant — `level` during `listening`, `message` during
+ * `error`, `provider` at startup, `warning` on non-fatal fallback.
+ * The UI must tolerate any of them being absent.
  */
 export interface DictationStatusEvent {
   status: DictationStatus;
@@ -24,6 +25,10 @@ export interface DictationStatusEvent {
   level?: number;
   /** One-line user-facing context, populated during `error`. */
   message?: string;
+  /** Provider identifier, set once at startup (e.g. "whisper-cpp", "windows-sr"). */
+  provider?: string;
+  /** Non-fatal advisory shown alongside any status. */
+  warning?: string;
 }
 
 /**

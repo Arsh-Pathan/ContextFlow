@@ -27,6 +27,8 @@ interface BubbleState {
   status: DictationStatus;
   level?: number;
   message?: string;
+  provider?: string;
+  warning?: string;
 }
 
 const INITIAL_STATE: BubbleState = { status: "idle" };
@@ -49,6 +51,8 @@ export function App() {
         status: event.status,
         ...(event.level !== undefined && { level: event.level }),
         ...(event.message !== undefined && { message: event.message }),
+        ...(event.provider !== undefined && { provider: event.provider }),
+        ...(event.warning !== undefined && { warning: event.warning }),
       });
     })
       .then((fn) => {
@@ -137,6 +141,8 @@ export function App() {
         status={state.status}
         {...(state.level !== undefined && { level: state.level })}
         {...(state.message !== undefined && { message: state.message })}
+        {...(state.provider !== undefined && { provider: state.provider })}
+        {...(state.warning !== undefined && { warning: state.warning })}
       />
     </div>
   );

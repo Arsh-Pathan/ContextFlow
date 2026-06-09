@@ -74,9 +74,12 @@ impl SpeechProvider for WhisperCppProvider {
 
                 debug!("utterance ended, running whisper inference on {} samples", audio_buffer.len());
 
-                // whisper-rs expects f32 samples between -1 and 1
+                // whisper-rs expects f32 samples between -1 and 1.
+                // Forward conversion in capture.rs uses i16::MAX (32767),
+                // so we divide by 32767.0 here for bit-exact round-trip.
+                // (32768.0 would introduce a 0.003% amplitude error.)
                 let audio_f32: Vec<f32> = audio_buffer.into_iter()
-                    .map(|s| s as f32 / 32768.0)
+                    .map(|s| (s as f32) / 32767.0)
                     .collect();
 
                 let mut state = match context.create_state() {

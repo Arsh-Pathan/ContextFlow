@@ -8,6 +8,8 @@ interface BubbleProps {
   status: DictationStatus;
   level?: number;
   message?: string;
+  provider?: string;
+  warning?: string;
 }
 
 const STATUS_LABEL: Record<DictationStatus, string> = {
@@ -17,7 +19,24 @@ const STATUS_LABEL: Record<DictationStatus, string> = {
   error: "Error",
 };
 
-export function Bubble({ status, level, message }: BubbleProps) {
+const PROVIDER_LABEL: Record<string, string> = {
+  "whisper-cpp": "Whisper (Local, GPU)",
+  "windows-sr": "Windows SR (Built-in)",
+};
+
+export function Bubble({ status, level, message, provider, warning }: BubbleProps) {
+  const tooltipLines = [STATUS_LABEL[status]];
+  if (provider) {
+    tooltipLines.push(`Provider: ${PROVIDER_LABEL[provider] ?? provider}`);
+  }
+  if (warning) {
+    tooltipLines.push(`Warning: ${warning}`);
+  }
+  if (status === "error" && message) {
+    tooltipLines.push(message);
+  }
+  const tooltip = tooltipLines.join(" | ");
+
   const ariaLabel =
     status === "error" && message
       ? `ContextFlow: Error — ${message}`
@@ -135,7 +154,7 @@ export function Bubble({ status, level, message }: BubbleProps) {
     <div
       role="status"
       aria-label={ariaLabel}
-      title={status === "error" && message ? message : STATUS_LABEL[status]}
+      title={tooltip}
       className={`w-[180px] h-[44px] flex items-center justify-between px-3 rounded-[22px] bg-[#1a1a1a] border-2 transition-colors duration-300 overflow-hidden ${borderClass} ${shadowClass}`}
       data-status={status}
     >
@@ -170,6 +189,16 @@ export function Bubble({ status, level, message }: BubbleProps) {
       <div className="flex gap-[5px] items-center justify-center flex-1 mx-2 h-6">
         {dots}
       </div>
+
+      {/* Warning indicator */}
+      {warning && (
+        <div
+          className="w-3.5 h-3.5 rounded-full bg-amber-500 flex items-center justify-center shrink-0"
+          title={warning}
+        >
+          <span className="text-black text-[10px] font-bold leading-none">!</span>
+        </div>
+      )}
 
       {/* Right Icon (Close Button) */}
       <button

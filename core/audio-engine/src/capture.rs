@@ -307,6 +307,32 @@ fn worker_loop(
         }
     }
 
+    // ── Flush residual audio (utterance-end samples silently lost otherwise) ──
+    // At most chunk_size_in() - 1 samples can be left in pending_in.
+    if !pending_in.is_empty() {
+        let chunk_in = resampler.chunk_size_in();
+        pending_in.resize(chunk_in, 0.0);
+        if let Ok(resampled) = resampler.process(&pending_in) {
+            tail_f32.extend_from_slice(resampled);
+        }
+    }
+    // At most FRAME_SAMPLES - 1 samples can be left in tail_f32.
+    if !tail_f32.is_empty() {
+        tail_f32.resize(FRAME_SAMPLES, 0.0);
+        let slice: Vec<f32> = tail_f32.drain(..FRAME_SAMPLES).collect();
+        let i16_frame: Vec<i16> = slice
+            .iter()
+            .map(|&f| {
+                let clamped = f.clamp(-1.0, 1.0);
+                (clamped * f32::from(i16::MAX)) as i16
+            })
+            .collect();
+        let level = rms_i16(&i16_frame);
+        let _ = levels_tx.send(level);
+        let frame = AudioFrame::from_samples(i16_frame, false);
+        let _ = frames_tx.send(frame);
+    }
+
     // Confirm we're using the target sample rate as a sanity check (compile-time
     // unreachable if someone touches FRAME_SAMPLE_RATE_HZ without updating VAD).
     debug_assert_eq!(FRAME_SAMPLE_RATE_HZ, 16_000);

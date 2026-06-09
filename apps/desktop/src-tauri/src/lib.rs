@@ -26,7 +26,7 @@ use tracing::{error, info};
 
 use contextflow_dictation_engine::{DictationEngine, DictationHandle, StatusEmitter};
 use contextflow_hotkey::HotkeyBus;
-use contextflow_ipc_contracts::{DictationStatusEvent, EVENT_DICTATION_STATUS};
+use contextflow_ipc_contracts::{DictationStatus, DictationStatusEvent, EVENT_DICTATION_STATUS};
 use contextflow_speech_engine::providers::whisper_cpp::WhisperCppProvider;
 use contextflow_text_injection::SendInputInjector;
 
@@ -124,18 +124,27 @@ async fn start_dictation_engine<R: tauri::Runtime>(
     
     // Fall back to WindowsSpeechProvider if Whisper initialization fails (e.g. missing model)
     info!(model = ?model_path, "initializing dictation provider");
-    let provider: Arc<dyn contextflow_speech_engine::SpeechProvider> = match WhisperCppProvider::new(model_path) {
+    let (provider, provider_warning): (Arc<dyn contextflow_speech_engine::SpeechProvider>, Option<String>) = match WhisperCppProvider::new(model_path) {
         Ok(p) => {
             info!("Successfully initialized WhisperCppProvider");
-            Arc::new(p)
+            (Arc::new(p), None)
         }
         Err(e) => {
-            error!(?e, "Failed to initialize WhisperCppProvider; falling back to WindowsSpeechProvider");
-            Arc::new(contextflow_speech_engine::providers::windows_sr::WindowsSpeechProvider::new())
+            let warning = format!("Whisper model failed to load: {e}. Falling back to Windows Speech Recognition — accuracy may be degraded.");
+            error!("{warning}");
+            (Arc::new(contextflow_speech_engine::providers::windows_sr::WindowsSpeechProvider::new()), Some(warning))
         }
     };
     info!(provider_id = provider.id(), "dictation provider selected");
     
+    // Emit an initial Idle event so the bubble shows which provider is active.
+    let mut init_event = DictationStatusEvent::new(DictationStatus::Idle)
+        .with_provider(provider.id());
+    if let Some(ref w) = provider_warning {
+        init_event = init_event.with_warning(w);
+    }
+    let _ = app.emit(EVENT_DICTATION_STATUS, &init_event);
+
     let injector = Arc::new(SendInputInjector::new());
 
     let emit: StatusEmitter = Arc::new(move |event: DictationStatusEvent| {

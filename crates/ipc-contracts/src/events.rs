@@ -43,9 +43,14 @@ impl DictationStatus {
 /// * `message` is set when `status == Error` to carry a one-line user-
 ///   facing description ("microphone unavailable", "speech privacy not
 ///   accepted", etc.) for the bubble's tooltip and the in-app log.
+/// * `provider` is set once at startup to show which speech engine is
+///   active (e.g. "whisper-cpp" or "windows-sr").
+/// * `warning` can be set alongside any status to carry a non-fatal
+///   advisory ("Falling back to Windows SR because whisper model
+///   failed to load").
 ///
-/// Both are `None` for every state where they don't apply. The UI MUST
-/// tolerate either being absent.
+/// All optional fields are `None` when they don't apply. The UI MUST
+/// tolerate any of them being absent.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DictationStatusEvent {
     pub status: DictationStatus,
@@ -57,6 +62,15 @@ pub struct DictationStatusEvent {
     /// User-facing error context. Populated during `Error`.
     #[serde(skip_serializing_if = "Option::is_none", default)]
     pub message: Option<String>,
+
+    /// Provider identifier shown in the bubble tooltip.
+    /// Set once at startup (e.g. "whisper-cpp", "windows-sr").
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub provider: Option<String>,
+
+    /// Non-fatal warning shown alongside any status.
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub warning: Option<String>,
 }
 
 impl DictationStatusEvent {
@@ -66,6 +80,8 @@ impl DictationStatusEvent {
             status,
             level: None,
             message: None,
+            provider: None,
+            warning: None,
         }
     }
 
@@ -76,6 +92,8 @@ impl DictationStatusEvent {
             status: DictationStatus::Listening,
             level: Some(level),
             message: None,
+            provider: None,
+            warning: None,
         }
     }
 
@@ -86,7 +104,23 @@ impl DictationStatusEvent {
             status: DictationStatus::Error,
             level: None,
             message: Some(message.into()),
+            provider: None,
+            warning: None,
         }
+    }
+
+    /// Attach the provider identifier to the event.
+    #[must_use]
+    pub fn with_provider(mut self, provider: &'static str) -> Self {
+        self.provider = Some(provider.to_owned());
+        self
+    }
+
+    /// Attach a non-fatal warning to the event.
+    #[must_use]
+    pub fn with_warning(mut self, warning: impl Into<String>) -> Self {
+        self.warning = Some(warning.into());
+        self
     }
 }
 

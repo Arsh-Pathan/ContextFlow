@@ -1,0 +1,112 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" fill="none">
+  <defs>
+    <linearGradient id="brand" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#10b981"/>
+      <stop offset="50%" stop-color="#0ea5e9"/>
+      <stop offset="100%" stop-color="#0e7490"/>
+    </linearGradient>
+    <linearGradient id="brandLight" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="50%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#22d3ee"/>
+    </linearGradient>
+    <linearGradient id="brandVert" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#0e7490" stop-opacity="0.2"/>
+    </linearGradient>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#070a14"/>
+      <stop offset="100%" stop-color="#0d1528"/>
+    </linearGradient>
+    <radialGradient id="glow1" cx="0.75" cy="0.5" r="0.4">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#10b981" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow2" cx="0.85" cy="0.35" r="0.15">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#10b981" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="blurLg">
+      <feGaussianBlur stdDeviation="50"/>
+    </filter>
+    <filter id="blurMd">
+      <feGaussianBlur stdDeviation="20"/>
+    </filter>
+    <filter id="blurSm">
+      <feGaussianBlur stdDeviation="6"/>
+    </filter>
+    <filter id="glowText">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="400" fill="url(#bg)"/>
+
+  <!-- Grid dots -->
+  <pattern id="dots" x="0" y="0" width="32" height="32" patternUnits="userSpaceOnUse">
+    <circle cx="16" cy="16" r="0.8" fill="#1e2a4a" opacity="0.5"/>
+  </pattern>
+  <rect width="1200" height="400" fill="url(#dots)"/>
+
+  <!-- Ambient glow orbs -->
+  <ellipse cx="920" cy="250" rx="350" ry="280" fill="url(#glow1)" filter="url(#blurLg)"/>
+  <ellipse cx="950" cy="160" rx="180" ry="180" fill="url(#glow2)" filter="url(#blurLg)"/>
+
+  <!-- Flowing curves (waveforms suggesting voice/flow) -->
+  <path d="M0 370 Q 80 340 160 360 T 320 340 T 480 365 T 640 345 T 800 360 T 960 340 T 1120 365 L1200 350 L1200 400 L0 400 Z"
+        fill="url(#brand)" opacity="0.06"/>
+  <path d="M0 380 Q 100 360 200 375 T 400 355 T 600 370 T 800 355 T 1000 375 T 1200 360 L1200 400 L0 400 Z"
+        fill="url(#brandLight)" opacity="0.04"/>
+
+  <!-- Decorative flowing lines -->
+  <path d="M-50 380 Q 100 340 250 370 T 550 340 T 850 370 T 1150 340 T 1300 365"
+        stroke="url(#brand)" stroke-width="1.5" opacity="0.3" fill="none"/>
+  <path d="M-50 395 Q 150 365 350 390 T 650 365 T 950 385 T 1300 370"
+        stroke="url(#brandLight)" stroke-width="1" opacity="0.15" fill="none"/>
+
+  <!-- Waveform bars (audio visualizer) -->
+  <g opacity="0.5" transform="translate(760, 175)">
+    <rect x="0" y="25" width="4" height="30" rx="2" fill="url(#brandVert)"/>
+    <rect x="12" y="10" width="4" height="60" rx="2" fill="url(#brandVert)"/>
+    <rect x="24" y="20" width="4" height="40" rx="2" fill="url(#brandVert)"/>
+    <rect x="36" y="0" width="4" height="80" rx="2" fill="url(#brandVert)"/>
+    <rect x="48" y="15" width="4" height="50" rx="2" fill="url(#brandVert)"/>
+    <rect x="60" y="30" width="4" height="20" rx="2" fill="url(#brandVert)"/>
+    <rect x="72" y="8" width="4" height="65" rx="2" fill="url(#brandVert)"/>
+    <rect x="84" y="22" width="4" height="35" rx="2" fill="url(#brandVert)"/>
+    <rect x="96" y="5" width="4" height="70" rx="2" fill="url(#brandVert)"/>
+    <rect x="108" y="18" width="4" height="45" rx="2" fill="url(#brandVert)"/>
+    <rect x="120" y="28" width="4" height="25" rx="2" fill="url(#brandVert)"/>
+    <rect x="132" y="12" width="4" height="55" rx="2" fill="url(#brandVert)"/>
+  </g>
+
+  <!-- Logo circle -->
+  <circle cx="940" cy="175" r="90" fill="#10b981" opacity="0.08" filter="url(#blurMd)"/>
+  <circle cx="940" cy="175" r="72" fill="url(#brand)" opacity="0.15" filter="url(#blurSm)"/>
+  <circle cx="940" cy="175" r="62" fill="url(#brand)"/>
+  <circle cx="940" cy="175" r="17" fill="white" fill-opacity="0.85"/>
+  <!-- Subtle ring -->
+  <circle cx="940" cy="175" r="62" stroke="white" stroke-width="1" stroke-opacity="0.15" fill="none"/>
+
+  <!-- Title -->
+  <text x="100" y="165" font-family="system-ui, -apple-system, sans-serif" font-size="68" font-weight="700" fill="white" letter-spacing="-0.03em">
+    ContextFlow
+  </text>
+
+  <!-- Tagline -->
+  <text x="100" y="220" font-family="system-ui, -apple-system, sans-serif" font-size="22" fill="#6b7280" font-weight="400" letter-spacing="0.02em">
+    <tspan fill="url(#brandLight)">Your thoughts</tspan><tspan fill="#6b7280">, in flow.</tspan>
+  </text>
+
+  <!-- Description -->
+  <g font-family="system-ui, -apple-system, sans-serif" font-size="14" fill="#4b5563" font-weight="400">
+    <text x="100" y="265">Windows-native AI voice dictation. Press a hotkey,</text>
+    <text x="100" y="285">speak naturally, and have text appear in any</text>
+    <text x="100" y="305">application — faster than typing, everywhere.</text>
+  </g>
+
+  <!-- Decorative accent line -->
+  <rect x="100" y="335" width="160" height="2" rx="1" fill="url(#brand)" opacity="0.7"/>
+</svg>

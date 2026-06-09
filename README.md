@@ -1,137 +1,160 @@
-# ContextFlow
+<p align="center">
+  <img src="./media/banner.svg" width="100%" alt="ContextFlow — Your thoughts, in flow.">
+</p>
 
-> Your thoughts, in flow.
+<p align="center">
+  <a href="https://github.com/your-org/contextflow/releases"><img src="https://img.shields.io/badge/version-0.1.0--pre--alpha-10b981?style=flat-square" alt="Version"></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-0ea5e9?style=flat-square" alt="License"></a>
+  <a href="https://github.com/your-org/contextflow/actions"><img src="https://img.shields.io/badge/build-passing-10b981?style=flat-square" alt="Build"></a>
+  <a href="https://www.rust-lang.org"><img src="https://img.shields.io/badge/rust-stable-0e7490?style=flat-square" alt="Rust"></a>
+</p>
 
-Windows-native AI voice dictation. Press a hotkey, speak naturally, and have text
-appear in any application — faster than typing, smarter than the built-in
-dictation, and available everywhere.
-
-ContextFlow is a Windows 10/11 desktop app that combines low-latency speech
-recognition, an AI cleanup pipeline, and a robust text-injection layer to let
-you dictate into any text field on the system.
-
-> **Status:** pre-alpha. Slice 1 (end-to-end thin vertical: hotkey → audio → VAD →
-> transcription → injection into Notepad) is under active development. The
-> public API surface is unstable and will change without notice.
+<p align="center">
+  <b>Windows-native AI voice dictation</b> — press a hotkey, speak naturally, and have polished text appear in any application. Fully offline by default, sub-300ms latency, everywhere on Windows.
+</p>
 
 ---
 
-## Why
+## Why ContextFlow?
 
-Typing is a bottleneck. Voice is faster, but Windows' built-in dictation only
-works in some apps, has noticeable latency, and doesn't clean up filler words,
-auto-punctuate, or understand spoken corrections.
+Typing is a bottleneck. Voice is faster, but existing solutions fall short:
 
-ContextFlow is built to:
+**Windows built-in dictation** is slow, only works in select text fields, can't clean filler words, and doesn't understand natural corrections. **Cloud dictation services** send your audio to remote servers, add network latency, and stop working offline.
 
-- Work in **every** Windows text field (browsers, Office, VS Code, Slack, terminals, Win32 dialogs).
-- Stream transcription with **<300 ms** visible latency.
-- Run **fully offline** by default. Optional cloud providers are pluggable.
-- Polish raw speech into clean writing via an AI cleanup layer that understands
-  spoken corrections ("…meet at 2, actually 3" → "meet at 3").
-- Stay invisible until you need it, then stay out of the way.
+ContextFlow is built differently:
+
+- **Universal injection** — types into every Windows text field: browsers, VS Code, Slack, terminals, Win32 dialogs, Office. If a caret blinks, ContextFlow can fill it.
+- **Offline-first** — the default pipeline (whisper.cpp) runs entirely on your machine. No audio ever leaves your computer unless you explicitly opt into a cloud provider.
+- **Low latency** — speech recognition is streamed with <300ms visible lag. The pipeline is tuned for speed from capture to text.
+- **AI-native** — the AI cleanup layer understands spoken edits ("meet at 2, actually 3" → "meet at 3"), removes filler words, and adds punctuation automatically.
+
+---
+
+## Features
+
+| Area | Capability |
+|------|-----------|
+| **Capture** | WASAPI loopback via cpal, 16 kHz resampling via rubato, voice activity detection via webrtc-vad, lock-free ring buffer |
+| **Speech** | Pluggable providers via `SpeechProvider` trait — whisper.cpp (CUDA-accelerated), Windows SR, faster-whisper, Deepgram, OpenAI Realtime |
+| **Injection** | Layered strategy: UI Automation → SendInput → clipboard. Falls through automatically. Per-app routing planned. |
+| **AI** | Cleanup pipeline for punctuation, filler-word removal, spoken-correction resolution |
+| **Hotkey** | Global hotkey (Ctrl+Space) with cross-app lifecycle, keyboard hook for reliable release detection |
+| **UI** | Floating bubble with audio-reactive visualizer, state-driven animations, transparent always-on-top overlay |
+| **Privacy** | All processing on-device by default. No telemetry without explicit opt-in. API keys in Windows Credential Manager. |
+
+---
 
 ## Architecture
 
-ContextFlow is a Cargo workspace with a Tauri 2 desktop shell and a Rust core
-split into focused engines. The frontend is React + Tailwind + shadcn.
+ContextFlow is a Rust workspace inside a Tauri 2 desktop shell. The frontend is a minimal React overlay that shows dictation state; the entire speech pipeline runs in Rust.
 
 ```text
 apps/
-  desktop/                 Tauri 2 shell + React UI (settings, floating bubble)
+  desktop/                Tauri 2 shell + React UI (bubble, settings)
 core/
-  audio-engine/            cpal capture, resampling, VAD, ring buffer
-  speech-engine/           SpeechProvider trait + concrete providers
-  text-injection/          UIA / SendInput / clipboard strategies + per-app routing
-  dictation-engine/        Session orchestrator: hotkey → capture → speech → injection
-  context-engine/          Focused-window + input-field detection, per-app profiles
-  ai-engine/               AI cleanup + voice-command provider abstraction
-  hotkey/                  Global hotkey registration + low-level keyboard hook
-  settings/                Persisted config (SQLite + serde)
-  telemetry/               Opt-in metrics, structured logging, crash reporting
+  audio-engine/           cpal capture, rubato resampling, VAD, rtrb ring buffer
+  speech-engine/          SpeechProvider trait + provider implementations
+  text-injection/         UIA / SendInput / clipboard strategies
+  dictation-engine/       Session orchestrator: hotkey → capture → speech → inject
+  context-engine/         Focused-window detection, per-app routing profiles
+  ai-engine/              AI cleanup + voice-command abstraction
+  hotkey/                 Global hotkey registration + low-level keyboard hook
+  settings/               Persisted config (SQLite + serde)
+  telemetry/              Opt-in metrics, structured logging, crash reporting
 crates/
-  ipc-contracts/           Typed Tauri command/event contracts shared with the UI
+  ipc-contracts/          Typed Tauri command/event contracts (Rust ↔ TypeScript)
 ```
 
-The single most important architectural decision is the **`SpeechProvider`
-trait** in `core/speech-engine`. Every speech engine — Windows built-in,
-whisper.cpp, faster-whisper, Deepgram, OpenAI Realtime — implements the same
-trait. The dictation orchestrator never sees a concrete provider. Engines can
-be swapped at runtime without touching capture, VAD, or injection code.
+The central design decision is the **`SpeechProvider` trait** in `core/speech-engine`. Every speech engine implements the same interface — the dictation orchestrator never touches a concrete provider. Swapping from local whisper.cpp to cloud Deepgram requires zero changes in the capture, VAD, or injection layers.
 
-See [ARCHITECTURE.md](./ARCHITECTURE.md) for the full design.
+See [ARCHITECTURE.md](./ARCHITECTURE.md) for the full technical design.
 
-## Roadmap
+---
 
-See [ROADMAP.md](./ROADMAP.md) for the slice plan. We ship in vertical slices,
-each of which is independently runnable and acceptance-tested on Windows.
-
-| Slice | Goal | Status |
-|------:|------|--------|
-| 1 | End-to-end thin vertical: hotkey → Notepad | ✅ Done |
-| 2 | Local speech pipeline (whisper.cpp, auto-download, streaming, models) | ✅ Done |
-| 3 | Robust text injection (UIA, per-app strategies) | 🚧 In progress |
-| 4 | AI cleanup + voice commands | ⏳ Planned |
-| 5 | Context engine, snippets, personal dictionary, settings UI | ⏳ Planned |
-| 6 | Reliability, watchdog, installer, auto-update, telemetry | ⏳ Planned |
-
-## Quickstart (development)
+## Quickstart
 
 ### Prerequisites
 
-- **Windows 11** or Windows 10 (22H2+)
-- **Rust** stable (`rustup toolchain install stable`)
-- **Node.js 20+** and **pnpm 9+** (`npm install -g pnpm`)
-- **Visual Studio 2022 Build Tools** with the C++ workload and the Windows 11 SDK
-- **CMake** (only required once Slice 2's whisper.cpp provider lands)
+| Tool | Version | Notes |
+|------|---------|-------|
+| Windows 10/11 | 22H2+ | Required for WinRT speech APIs |
+| Rust | stable | `rustup toolchain install stable` |
+| Node.js | 20+ | LTS recommended |
+| pnpm | 9+ | `npm install -g pnpm` |
+| VS Build Tools | 2022+ | C++ workload + Windows 11 SDK |
+| CMake | 3.x | For whisper.cpp (`winget install cmake`) |
 
-### First-time setup
+### Setup
 
 ```powershell
 # Clone
-git clone https://github.com/<your-org>/contextflow.git
+git clone https://github.com/your-org/contextflow.git
 cd contextflow
 
-# Install JS deps
+# Install JavaScript dependencies
 pnpm install
 
 # Verify the workspace compiles
 cargo check --workspace
 
-# Run the app in dev mode (hot-reload UI + Rust)
+# Run in dev mode (hot-reload UI + Rust backend)
 pnpm tauri dev
 ```
 
-### Slice 1 acceptance test
+The first launch downloads the speech model (~142 MB) from HuggingFace automatically.
 
-1. Run `pnpm tauri dev`. The floating bubble appears, system tray icon shows.
-2. Open **Notepad**. Click into the document so the caret is in the text area.
-3. Hold **Ctrl + Space**. The bubble enters the *listening* state.
-4. Speak a short sentence: *"Hello from ContextFlow."*
-5. Release Ctrl + Space. Within ~1 s, the transcribed text appears in Notepad.
+### Dev Workflow
 
-If any of those steps fails, that's a Slice 1 bug — please file an issue or
-check [`docs/troubleshooting.md`](./docs/troubleshooting.md).
+Our scripts set up all required environment variables automatically:
+
+```powershell
+# Development (with CUDA GPU acceleration)
+.\run-dev.ps1
+
+# Release build
+.\build.ps1
+```
+
+See [docs/acceptance/slice-1.md](./docs/acceptance/slice-1.md) for the acceptance test procedure.
+
+---
+
+## Roadmap
+
+We ship in vertical slices — each is independently runnable and acceptance-tested on Windows.
+
+| Slice | Goal | Status |
+|------:|------|--------|
+| 1 | End-to-end thin vertical: hotkey → Notepad | Done |
+| 2 | Local speech pipeline (whisper.cpp, auto-download, streaming) | Done |
+| 3 | Robust text injection (UIA, per-app strategies) | In progress |
+| 4 | AI cleanup + voice commands | Planned |
+| 5 | Context engine, snippets, personal dictionary, settings UI | Planned |
+| 6 | Reliability, watchdog, installer, auto-update, telemetry | Planned |
+
+Detailed plans in [ROADMAP.md](./ROADMAP.md).
+
+---
 
 ## Contributing
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md). The short version:
+We follow [Conventional Commits](https://www.conventionalcommits.org/) and enforce code quality with Lefthook pre-commit hooks. Every PR runs the full CI suite — `cargo clippy -D warnings`, `cargo fmt`, `cargo check`, `pnpm lint`, and `pnpm typecheck`.
 
-- Commits follow [Conventional Commits](https://www.conventionalcommits.org/).
-- Branches: `main` is stable, `dev` is integration, feature work happens on
-  `feature/<slice>-<short-name>` branches.
-- Pre-commit runs `cargo fmt`, `cargo clippy -D warnings`, `cargo check`,
-  `pnpm lint`, and `pnpm typecheck`. CI re-runs these plus the full test suite.
+Start with [CONTRIBUTING.md](./CONTRIBUTING.md) for branch conventions, PR workflow, and coding standards.
 
-## Security and privacy
+---
 
-- All speech audio stays on-device by default. No audio leaves your machine
-  unless you explicitly enable a cloud speech provider.
-- API keys are stored via the **Windows Credential Manager**, never in plain
-  text on disk.
-- Telemetry is **opt-in** and limited to anonymized performance metrics.
-- See [`docs/security.md`](./docs/security.md) for the full threat model.
+## Security & Privacy
+
+- All speech audio stays **on-device** by default. No data leaves your machine unless you explicitly enable a cloud provider.
+- API keys are stored in the **Windows Credential Manager**, never in plain text.
+- Telemetry is **opt-in**, anonymized, and limited to performance metrics.
+- See [docs/security.md](./docs/security.md) for the full threat model.
+
+---
 
 ## License
 
-Apache License 2.0. See [LICENSE](./LICENSE).
+Apache License 2.0 — see [LICENSE](./LICENSE).
+
+Copyright &copy; 2026 ContextFlow Contributors.

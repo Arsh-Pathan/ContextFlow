@@ -71,14 +71,14 @@ struct DictationOrchestrator(#[allow(dead_code)] DictationHandle);
 async fn ensure_model_exists<R: tauri::Runtime>(app: &AppHandle<R>) -> anyhow::Result<std::path::PathBuf> {
     let app_data = app.path().app_data_dir().map_err(|e| anyhow::anyhow!("Failed to get app data dir: {}", e))?;
     std::fs::create_dir_all(&app_data)?;
-    let model_path = app_data.join("ggml-tiny.en.bin");
+    let model_path = app_data.join("ggml-base.en.bin");
     
     if model_path.exists() {
         return Ok(model_path);
     }
     
     info!("Model not found at {:?}, downloading from HuggingFace...", model_path);
-    let url = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.en.bin";
+    let url = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin";
     
     let mut response = reqwest::get(url).await?;
     if !response.status().is_success() {
@@ -108,7 +108,7 @@ async fn start_dictation_engine<R: tauri::Runtime>(
         Ok(path) => path,
         Err(e) => {
             error!("Failed to ensure model exists: {e}. Falling back to default path.");
-            std::path::PathBuf::from("../../../ggml-tiny.en.bin")
+            std::path::PathBuf::from("../../../ggml-base.en.bin")
         }
     };
     

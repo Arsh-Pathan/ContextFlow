@@ -32,12 +32,16 @@ export function Bubble({ status, level, message }: BubbleProps) {
     
     // EXTREMELY reactive audio profile
     if (status === "listening" && level !== undefined) {
+      // Create a pseudo-random jitter for each bar based on the raw audio level and index
+      // so they look like independent frequency bands instead of one unified block
+      const pseudoRandom = Math.abs(Math.sin((level * 5000) + i * 1.5));
+      const dynamicIntensity = 0.2 + (0.8 * pseudoRandom);
+
       const distanceToCenter = Math.abs((numDots - 1) / 2 - i);
-      const intensity = 1 - (distanceToCenter / ((numDots - 1) / 2)) * 0.4;
-      // Multiply by a huge number because raw RMS levels can be very small (e.g. 0.01)
-      const baseGain = level * 80;
-      // Let it scale massively up to 8x so it really jumps
-      scaleY = 1 + Math.min(8, baseGain * intensity);
+      const curve = 1 - (distanceToCenter / ((numDots - 1) / 2)) * 0.3;
+      
+      const baseGain = level * 120;
+      scaleY = 1 + Math.min(10, baseGain * curve * dynamicIntensity);
     }
 
     const delayMs = i * 150; // slightly wider stagger for a smoother sine wave

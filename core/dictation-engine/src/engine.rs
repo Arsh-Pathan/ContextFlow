@@ -282,7 +282,7 @@ async fn start_session(
     // Audio capture for the bubble's level meter. cpal's `Stream` is `!Send`,
     // so we can't hold an `AudioEngine` across awaits on a multi-thread
     // runtime. Instead a dedicated task owns the engine: it starts it,
-    let mut audio_sink = if !provider.capabilities().feeds_own_audio {
+    let audio_sink = if !provider.capabilities().feeds_own_audio {
         Some(speech.audio_sink.clone())
     } else {
         None

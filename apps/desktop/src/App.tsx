@@ -113,7 +113,7 @@ export function App() {
         
         // Window is 180px wide. Bottom offset is 60px.
         const x = (logicalWidth - 180) / 2;
-        const y = logicalHeight - 60 - 44; // 60px from bottom, 44px is height
+        const y = logicalHeight - 120 - 44; // 60px from bottom, 44px is height
         
         win.setPosition(new LogicalPosition(x, y)).catch(console.warn);
       }

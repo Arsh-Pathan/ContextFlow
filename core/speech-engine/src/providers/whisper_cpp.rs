@@ -2,15 +2,16 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use tokio::sync::{mpsc, oneshot};
+use tokio::sync::{mpsc};
 use tokio_stream::wrappers::ReceiverStream;
-use tracing::{debug, info, warn};
+use tracing::{debug};
 use whisper_rs::{FullParams, SamplingStrategy, WhisperContext, WhisperContextParameters};
 
 use crate::error::SpeechError;
 use crate::provider::{ProviderCapabilities, SessionConfig, SpeechProvider};
 use crate::session::{AudioSink, SpeechSession, TranscriptEvent};
 
+#[derive(Debug)]
 pub struct WhisperCppProvider {
     context: Arc<WhisperContext>,
 }
@@ -109,10 +110,7 @@ impl SpeechProvider for WhisperCppProvider {
                     return;
                 }
 
-                let num_segments = match state.full_n_segments() {
-                    Ok(n) => n,
-                    Err(_) => 0,
-                };
+                let num_segments = state.full_n_segments().unwrap_or_else(|_| 0);
 
                 let mut final_text = String::new();
                 for i in 0..num_segments {

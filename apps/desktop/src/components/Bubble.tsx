@@ -26,28 +26,47 @@ export function Bubble({ status, level, message }: BubbleProps) {
   // 6 dots for the visualizer
   const numDots = 6;
   const dots = Array.from({ length: numDots }).map((_, i) => {
-    // Calculate the scaling height for this bar
+    // Determine dynamic scale for audio reactivity
     let scaleY = 1;
-    
-    // EXTREMELY reactive audio profile
-    if (status === "listening" && level !== undefined) {
-      // Create a pseudo-random jitter for each bar based on the raw audio level and index
-      // so they look like independent frequency bands instead of one unified block
-      const pseudoRandom = Math.abs(Math.sin((level * 5000) + i * 1.5));
-      const dynamicIntensity = 0.2 + (0.8 * pseudoRandom);
 
-      const distanceToCenter = Math.abs((numDots - 1) / 2 - i);
-      const curve = 1 - (distanceToCenter / ((numDots - 1) / 2)) * 0.3;
-      
-      const baseGain = level * 25;
-      // Cap scaleY to 2.5 so the 8px dot doesn't exceed 20-24px total height 
-      // (which keeps it safely inside the 44px window)
-      scaleY = 1 + Math.min(2.5, baseGain * curve * dynamicIntensity);
-    }
+    // EXTREMELY reactive audio profile
+      if (status === "listening" && level !== undefined) {
+          // Softer, more stable variation per dot
+          const pseudoRandom = Math.abs(
+              Math.sin(level * 12 + i * 0.8)
+          );
+
+          // Reduced intensity range to avoid flickering
+          const dynamicIntensity =
+              0.65 + (0.35 * pseudoRandom);
+
+          const distanceToCenter = Math.abs(
+              (numDots - 1) / 2 - i
+          );
+
+          const curve =
+              1 -
+              (distanceToCenter /
+                  ((numDots - 1) / 2)) *
+              0.3;
+
+          // Lower gain = smoother movement
+          const baseGain = level * 16;
+
+          // Clamp to avoid jumpy spikes
+          scaleY =
+              1 +
+              Math.min(
+                  2.2,
+                  baseGain *
+                  curve *
+                  dynamicIntensity
+              );
+      }
 
     const delayMs = i * 150; // slightly wider stagger for a smoother sine wave
     const delay = `${delayMs}ms`;
-    
+
     // Determine the animation based on state
     let animation = 'none';
     if (status === "processing") {
@@ -57,7 +76,7 @@ export function Bubble({ status, level, message }: BubbleProps) {
     } else if (status === "error") {
       animation = `error-shake 0.4s ease-in-out ${delay} infinite`;
     }
-      
+
     const dotStyle: CSSProperties = {
       transform: status === "listening" ? `scaleY(${scaleY})` : undefined,
       animation: animation,
@@ -65,8 +84,8 @@ export function Bubble({ status, level, message }: BubbleProps) {
 
     // Use an instant transition for listening so it snaps exactly to the voice,
     // but a slower transition for other state changes.
-    const transitionClass = status === "listening" 
-      ? "transition-transform duration-50 ease-out" 
+    const transitionClass = status === "listening"
+      ? "transition-transform duration-100 ease-out"
       : "transition-all duration-300 ease-in-out";
 
     return (
@@ -97,10 +116,10 @@ export function Bubble({ status, level, message }: BubbleProps) {
   // Determine border and shadow styling based on state
   let borderClass = "border-[#333]";
   let shadowClass = "shadow-[0_4px_24px_rgba(0,0,0,0.6)]";
-  
+
   if (status === "listening") {
     // Logo's main color (emerald)
-    borderClass = "border-[#10b981]"; 
+    borderClass = "border-[#10b981]";
     shadowClass = "shadow-[0_0_24px_rgba(16,185,129,0.4)]";
   } else if (status === "processing") {
     // Processing sky-blue
@@ -136,11 +155,11 @@ export function Bubble({ status, level, message }: BubbleProps) {
           75% { transform: translateX(2px); }
         }
       `}</style>
-      
+
       {/* Left Icon (Logo) */}
       <div className={`flex items-center justify-center w-7 h-7 rounded-full overflow-hidden transition-all duration-300 ${
         status === "listening" ? "drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] scale-110" 
-        : status === "processing" ? "drop-shadow-[0_0_8px_rgba(56,189,248,0.6)] animate-pulse"
+        : status === "processing" ? "drop-shadow-[0_0_8px_rgba(56,189,248,0.6)]"
         : status === "error" ? "grayscale"
         : ""
       }`}>
@@ -153,7 +172,7 @@ export function Bubble({ status, level, message }: BubbleProps) {
       </div>
 
       {/* Right Icon (Close Button) */}
-      <button 
+      <button
         onClick={handleClose}
         className="flex items-center justify-center w-6 h-6 rounded-full bg-white/5 text-gray-400 hover:text-white hover:bg-white/15 transition-all duration-200"
       >

@@ -1,0 +1,45 @@
+# Lefthook pre-commit and pre-push hooks.
+#
+# Install once with:
+#   cargo install lefthook
+#   lefthook install
+#
+# CI re-runs all of these plus the full test suite.
+
+pre-commit:
+  parallel: true
+  commands:
+    cargo-fmt:
+      glob: "*.rs"
+      run: cargo fmt --all -- --check
+    cargo-check:
+      glob: "*.{rs,toml}"
+      run: cargo check --workspace --all-targets
+    cargo-clippy:
+      glob: "*.rs"
+      run: cargo clippy --workspace --all-targets -- -D warnings
+    pnpm-lint:
+      glob: "apps/desktop/**/*.{ts,tsx,js,jsx}"
+      run: pnpm --filter ./apps/desktop lint
+      skip:
+        - merge
+        - rebase
+    pnpm-typecheck:
+      glob: "apps/desktop/**/*.{ts,tsx}"
+      run: pnpm --filter ./apps/desktop typecheck
+      skip:
+        - merge
+        - rebase
+
+pre-push:
+  commands:
+    cargo-test:
+      run: cargo test --workspace --all-targets --no-fail-fast
+
+commit-msg:
+  commands:
+    conventional:
+      run: |
+        # Lightweight conventional-commit check. CI runs the real one on the PR title.
+        head -n1 {1} | grep -Eq '^(feat|fix|perf|refactor|docs|test|build|ci|chore|style)(\([a-z]+\))?!?: .+' \
+          || (echo "Commit message must follow Conventional Commits. See CONTRIBUTING.md."; exit 1)

@@ -1,0 +1,103 @@
+# ─── Rust / Cargo ──────────────────────────────────────────────────────────
+target/
+**/target/
+Cargo.lock.bak
+*.pdb
+*.rs.bk
+.cargo/config.toml.local
+
+# ─── Node / Frontend ───────────────────────────────────────────────────────
+node_modules/
+.pnpm-store/
+.npm/
+.yarn/
+.pnp.*
+dist/
+dist-ssr/
+build/
+.next/
+.nuxt/
+.svelte-kit/
+.vite/
+.turbo/
+.cache/
+*.tsbuildinfo
+.eslintcache
+.stylelintcache
+
+# ─── Tauri ─────────────────────────────────────────────────────────────────
+apps/desktop/src-tauri/target/
+apps/desktop/src-tauri/gen/
+apps/desktop/src-tauri/WixTools/
+apps/desktop/src-tauri/.tauri/
+
+# ─── Speech models (large binary blobs — never commit) ─────────────────────
+models/
+*.gguf
+*.bin
+*.onnx
+*.pt
+*.safetensors
+*.ggml
+
+# ─── Windows artifacts ─────────────────────────────────────────────────────
+Thumbs.db
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+
+# ─── macOS / Linux (in case of contributors) ──────────────────────────────
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# ─── IDE / Editors ─────────────────────────────────────────────────────────
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.recommended.json
+.idea/
+*.iml
+*.sublime-workspace
+*.sublime-project
+.vs/
+*.user
+*.suo
+
+# ─── Logs / Diagnostics ────────────────────────────────────────────────────
+*.log
+logs/
+crash-reports/
+diagnostics/
+*.dmp
+*.heap
+
+# ─── Local config / secrets ────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+*.local.toml
+secrets/
+.contextflow/
+
+# ─── Build / Installer outputs ─────────────────────────────────────────────
+release/
+installer/output/
+*.exe
+*.dll
+!apps/desktop/src-tauri/icons/*.exe
+!**/fixtures/**/*.exe
+
+# ─── Coverage / Profiling ──────────────────────────────────────────────────
+coverage/
+*.profraw
+*.profdata
+flamegraph.svg
+perf.data*

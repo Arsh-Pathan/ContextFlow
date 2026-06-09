@@ -1,0 +1,58 @@
+# Auto-detect text files and normalize line endings to LF in the repo.
+* text=auto eol=lf
+
+# Explicit text files
+*.rs        text eol=lf
+*.toml      text eol=lf
+*.ts        text eol=lf
+*.tsx       text eol=lf
+*.js        text eol=lf
+*.jsx       text eol=lf
+*.json      text eol=lf
+*.md        text eol=lf
+*.yml       text eol=lf
+*.yaml      text eol=lf
+*.sh        text eol=lf
+*.html      text eol=lf
+*.css       text eol=lf
+
+# Windows-only files keep CRLF
+*.bat       text eol=crlf
+*.cmd       text eol=crlf
+*.ps1       text eol=crlf
+*.psm1      text eol=crlf
+*.psd1      text eol=crlf
+
+# Binary blobs — never diff, never normalize
+*.png       binary
+*.jpg       binary
+*.jpeg      binary
+*.gif       binary
+*.ico       binary
+*.icns      binary
+*.webp      binary
+*.woff      binary
+*.woff2     binary
+*.ttf       binary
+*.otf       binary
+*.wav       binary
+*.mp3       binary
+*.flac      binary
+*.ogg       binary
+*.pdf       binary
+*.zip       binary
+*.7z        binary
+*.gz        binary
+*.tar       binary
+*.exe       binary
+*.dll       binary
+*.so        binary
+*.dylib     binary
+*.gguf      binary
+*.bin       binary
+*.onnx      binary
+*.ggml      binary
+
+# GitHub linguist hints
+docs/**           linguist-documentation
+**/fixtures/**    linguist-vendored

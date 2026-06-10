@@ -28,12 +28,6 @@
     </filter>
   </defs>
 
-  <!-- Huge Logo Watermark Showoff (Centered in the background) -->
-  <g transform="translate(600, 200)" opacity="0.08">
-    <circle cx="0" cy="0" r="160" fill="url(#brand)"/>
-    <circle cx="0" cy="0" r="48" fill="white"/>
-  </g>
-
   <!-- Centered content -->
   <g transform="translate(600, 180)">
     

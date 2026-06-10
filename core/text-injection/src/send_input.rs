@@ -39,9 +39,11 @@
 //! call; for normal dictation utterances that's one or two calls total.
 
 use std::mem::size_of;
+use std::thread;
+use std::time::Duration;
 
 use async_trait::async_trait;
-use tracing::{debug, trace, warn};
+use tracing::{debug, warn};
 use windows::Win32::UI::Input::KeyboardAndMouse::{
     SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_KEYUP, KEYEVENTF_UNICODE,
     VIRTUAL_KEY,
@@ -51,8 +53,6 @@ use crate::error::InjectionError;
 use crate::injector::{InjectorKind, TextInjector};
 
 /// Maximum number of `INPUT` structs per `SendInput` call. See module docs.
-const SEND_INPUT_CHUNK: usize = 256;
-
 /// `SendInput` Unicode injector. Stateless — share one across the app.
 #[derive(Debug, Default, Clone, Copy)]
 pub struct SendInputInjector;
@@ -83,41 +83,45 @@ impl TextInjector for SendInputInjector {
     }
 }
 
-/// Build INPUT structs for each UTF-16 code unit and dispatch in chunks.
+/// Build INPUT structs for each character and dispatch with a typing animation delay.
 fn inject_blocking(text: &str) -> Result<(), InjectionError> {
-    let inputs = build_unicode_inputs(text);
-    if inputs.is_empty() {
+    if text.is_empty() {
         return Ok(());
     }
 
     let cb_size = i32::try_from(size_of::<INPUT>())
         .map_err(|_| InjectionError::Win32("INPUT struct size doesn't fit in i32".to_owned()))?;
 
-    for chunk in inputs.chunks(SEND_INPUT_CHUNK) {
-        // SAFETY: `SendInput` reads exactly `chunk.len()` `INPUT` structs from
-        // the slice. The slice is valid for the duration of the call, the
-        // INPUT layout matches what the kernel expects (we built them via
-        // the windows crate's bindings), and `cb_size` is the size of one
-        // INPUT struct as the API requires.
-        let dispatched = unsafe { SendInput(chunk, cb_size) };
-        let requested = u32::try_from(chunk.len()).unwrap_or(u32::MAX);
+    let mut requested_total = 0;
+    let mut dispatched_total = 0;
+
+    for ch in text.chars() {
+        // Build inputs just for this character (2 or 4 events depending on if it's a surrogate pair)
+        let mut char_str = [0; 4];
+        let ch_str = ch.encode_utf8(&mut char_str);
+        let inputs = build_unicode_inputs(ch_str);
+        
+        let dispatched = unsafe { SendInput(&inputs, cb_size) };
+        let requested = u32::try_from(inputs.len()).unwrap_or(u32::MAX);
+        
+        requested_total += requested;
+        dispatched_total += dispatched;
+        
         if dispatched != requested {
-            // Convention: SendInput returns the number of events successfully
-            // dispatched. Anything less than requested means a low-level hook
-            // ate the rest — almost always a screen reader, RDP overlay, or
-            // security tool. Surface it so the orchestrator can show a
-            // useful error rather than silently dropping the transcript.
             warn!(
-                requested,
-                dispatched, "SendInput dispatched fewer events than requested"
+                requested_total,
+                dispatched_total, "SendInput dispatched fewer events than requested"
             );
             return Err(InjectionError::HookBlocked {
-                requested,
-                dispatched,
+                requested: requested_total,
+                dispatched: dispatched_total,
             });
         }
-        trace!(events = requested, "SendInput chunk dispatched");
+        
+        // Typing animation delay
+        thread::sleep(Duration::from_millis(15));
     }
+    
     debug!(chars = text.chars().count(), "text injection complete");
     Ok(())
 }

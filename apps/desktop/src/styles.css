@@ -18,3 +18,23 @@
            shadow-[0_2px_8px_rgba(0,0,0,0.4)];
   }
 }
+
+/* Global keyframes used by inline styles in Bubble.tsx */
+@keyframes processing-wave {
+  0%, 100% { transform: translateY(0); opacity: 0.4; }
+  25% { transform: translateY(-4px); opacity: 1; }
+  75% { transform: translateY(4px); opacity: 1; }
+}
+@keyframes idle-breathe {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.1); }
+}
+@keyframes error-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+@keyframes spin-gradient {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

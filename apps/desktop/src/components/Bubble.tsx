@@ -42,26 +42,34 @@ export function Bubble({ status, level, message, provider, warning }: BubbleProp
       ? `ContextFlow: Error — ${message}`
       : `ContextFlow: ${STATUS_LABEL[status]}`;
 
-  // Smooth incoming level with exponential moving average
-  const smoothLevelRef = useRef(0);
+  // Track whether volume is rising or falling to adjust CSS transition speed
+  const prevLevelRef = useRef(0);
   const raw = level ?? 0;
-  // Heavy smoothing — takes ~20 frames (400ms) to reach 95% of a step
-  smoothLevelRef.current = smoothLevelRef.current * 0.88 + raw * 0.12;
-  const smoothed = smoothLevelRef.current;
+  const isRising = raw > prevLevelRef.current;
+  prevLevelRef.current = raw;
 
   // 6 dots for the visualizer
   const numDots = 6;
   const dots = Array.from({ length: numDots }).map((_, i) => {
-    let scaleY = 1;
+    let heightPx = 5;
 
     if (status === "listening" && level !== undefined) {
+      // Shape the waveform so the middle is taller than the edges
       const distanceToCenter = Math.abs((numDots - 1) / 2 - i);
-      const curve = 1 - (distanceToCenter / ((numDots - 1) / 2)) * 0.35;
+      const curve = 1 - (distanceToCenter / ((numDots - 1) / 2)) * 0.4;
 
-      // Increased gain to make dots much more responsive to voice
-      const baseGain = smoothed * 15;
+      // Non-linear boost to give MUCH bigger amplitude even for quiet speech
+      const boostedLevel = Math.pow(raw, 0.5);
 
-      scaleY = 1 + Math.min(3.0, baseGain * curve);
+      // Higher base gain
+      const baseGain = boostedLevel * 70;
+
+      // Slowly breathing natural variation per dot so max positions dynamically morph over time
+      const timePhase = Date.now() / 400;
+      const organicVariation = 0.8 + Math.sin(timePhase + i * 2.4) * 0.4;
+
+      // Cap at 32px so it fits nicely in the 44px bubble
+      heightPx = 5 + Math.min(32, baseGain * curve * organicVariation);
     }
 
     const delayMs = i * 150;
@@ -77,25 +85,25 @@ export function Bubble({ status, level, message, provider, warning }: BubbleProp
     }
 
     const dotStyle: CSSProperties = {
-      transform: status === "listening" ? `scaleY(${scaleY})` : undefined,
+      height: status === "listening" ? `${heightPx}px` : undefined,
       animation: animation,
     };
 
     const transitionClass = status === "listening"
-      ? "transition-transform duration-150 ease-out"
+      ? (isRising ? "transition-[height] duration-100 ease-out" : "transition-[height] duration-500 ease-out")
       : "transition-all duration-300 ease-in-out";
 
     return (
       <div
         key={i}
-        className={`w-1.5 rounded-full origin-center ${transitionClass} ${
+        className={`w-[5px] rounded-full origin-center ${transitionClass} ${
           status === "processing" 
-            ? "h-1.5 bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.8)]" 
+            ? "h-[5px] bg-sky-400" 
             : status === "error"
-              ? "h-1.5 bg-rose-500"
+              ? "h-[5px] bg-rose-500"
               : status === "listening"
-                ? "h-2 bg-white shadow-[0_0_12px_rgba(255,255,255,1)]"
-                : "h-1.5 bg-gray-500"
+                ? "bg-white"
+                : "h-[5px] bg-gray-500"
         }`}
         style={dotStyle}
       />
@@ -139,26 +147,7 @@ export function Bubble({ status, level, message, provider, warning }: BubbleProp
       className={`relative h-[44px] rounded-[22px] overflow-hidden p-[2px] transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] ${wrapperClass} ${shadowClass}`}
       data-status={status}
     >
-      <style>{`
-        @keyframes processing-wave {
-          0%, 100% { transform: translateY(0); opacity: 0.4; }
-          25% { transform: translateY(-4px); opacity: 1; }
-          75% { transform: translateY(4px); opacity: 1; }
-        }
-        @keyframes idle-breathe {
-          0%, 100% { opacity: 0.3; transform: scale(1); }
-          50% { opacity: 0.7; transform: scale(1.1); }
-        }
-        @keyframes error-shake {
-          0%, 100% { transform: translateX(0); }
-          25% { transform: translateX(-2px); }
-          75% { transform: translateX(2px); }
-        }
-        @keyframes spin-gradient {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
+
 
       {/* Spinning Gradient Border */}
       <div 
@@ -175,12 +164,20 @@ export function Bubble({ status, level, message, provider, warning }: BubbleProp
         
         {/* Left Icon (Logo) */}
         <div className={`absolute left-2.5 top-1/2 -translate-y-1/2 flex items-center justify-center w-7 h-7 rounded-full overflow-hidden transition-all duration-300 ${
-          status === "listening" ? "drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] scale-110" 
+          status === "listening" ? "drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" 
           : status === "processing" ? "drop-shadow-[0_0_8px_rgba(56,189,248,0.6)]"
-          : status === "error" ? "grayscale"
+          : status === "error" ? "drop-shadow-[0_0_8px_rgba(244,63,94,0.6)]"
           : ""
         }`}>
-          <img src="/contextflow.svg" alt="ContextFlow Logo" className="w-full h-full object-cover" />
+          <img 
+            src="/contextflow.svg" 
+            alt="ContextFlow Logo" 
+            className={`w-full h-full object-cover transition-all duration-300 ${
+              status === "processing" ? "hue-rotate-60 brightness-110" 
+              : status === "error" ? "hue-rotate-180 brightness-110"
+              : ""
+            }`} 
+          />
         </div>
 
         {/* Middle Audio Visualizer Dots */}

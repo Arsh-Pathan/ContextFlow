@@ -169,11 +169,15 @@ mod tests {
             status: DictationStatus::Listening,
             level: Some(0.75),
             message: Some("captured".to_owned()),
+            provider: Some("whisper".to_owned()),
+            warning: Some("low battery".to_owned()),
         };
         let json = serde_json::to_string(&original).unwrap();
         let back: DictationStatusEvent = serde_json::from_str(&json).unwrap();
         assert_eq!(back.status, DictationStatus::Listening);
         assert_eq!(back.level, Some(0.75));
         assert_eq!(back.message.as_deref(), Some("captured"));
+        assert_eq!(back.provider.as_deref(), Some("whisper"));
+        assert_eq!(back.warning.as_deref(), Some("low battery"));
     }
 }

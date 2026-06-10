@@ -238,10 +238,8 @@ fn dispatch_f32(data: &[f32], channels: usize, tx: &mut rtrb::Producer<f32>) {
 
     if let Ok(mut chunk) = tx.write_chunk(frames) {
         let (slice1, slice2) = chunk.as_mut_slices();
-        let mut mono_idx = 0;
-        
         let scale = 1.0 / channels as f32;
-        for frame in data.chunks_exact(channels) {
+        for (mono_idx, frame) in data.chunks_exact(channels).enumerate() {
             let sum: f32 = frame.iter().sum();
             let val = sum * scale;
             if mono_idx < slice1.len() {
@@ -249,7 +247,6 @@ fn dispatch_f32(data: &[f32], channels: usize, tx: &mut rtrb::Producer<f32>) {
             } else {
                 slice2[mono_idx - slice1.len()] = val;
             }
-            mono_idx += 1;
         }
         chunk.commit_all();
     }
@@ -355,18 +352,24 @@ mod tests {
     fn dispatch_downmixes_stereo_to_mono() {
         // Manual test of the downmix arithmetic without touching cpal.
         let stereo = vec![1.0_f32, -1.0, 0.5, -0.5];
-        let (tx, mut rx) = mpsc::channel(4);
-        dispatch_f32(&stereo, 2, &tx);
-        let got = rx.try_recv().unwrap();
+        let (mut tx, mut rx) = rtrb::RingBuffer::<f32>::new(4);
+        dispatch_f32(&stereo, 2, &mut tx);
+        let chunk = rx.read_chunk(2).unwrap();
+        let (s1, s2) = chunk.as_slices();
+        let mut got = s1.to_vec();
+        got.extend_from_slice(s2);
         assert_eq!(got, vec![0.0_f32, 0.0]);
     }
 
     #[test]
     fn dispatch_passes_mono_through() {
         let mono = vec![0.1_f32, -0.2, 0.3];
-        let (tx, mut rx) = mpsc::channel(4);
-        dispatch_f32(&mono, 1, &tx);
-        let got = rx.try_recv().unwrap();
+        let (mut tx, mut rx) = rtrb::RingBuffer::<f32>::new(4);
+        dispatch_f32(&mono, 1, &mut tx);
+        let chunk = rx.read_chunk(3).unwrap();
+        let (s1, s2) = chunk.as_slices();
+        let mut got = s1.to_vec();
+        got.extend_from_slice(s2);
         assert_eq!(got, mono);
     }
 }

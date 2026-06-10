@@ -60,10 +60,10 @@ fn inject_blocking(text: &str) -> Result<(), InjectionError> {
     std::thread::sleep(Duration::from_millis(250));
 
     // 5. Restore old text (if there was any)
-    if !old_text.is_empty() {
-        let _ = clipboard.set_text(old_text);
-    } else {
+    if old_text.is_empty() {
         let _ = clipboard.clear();
+    } else {
+        let _ = clipboard.set_text(old_text);
     }
 
     Ok(())
@@ -84,7 +84,7 @@ fn send_ctrl_v() -> Result<(), InjectionError> {
                 ki: KEYBDINPUT {
                     wVk: VK_CONTROL,
                     wScan: 0,
-                    dwFlags: Default::default(),
+                    dwFlags: windows::Win32::UI::Input::KeyboardAndMouse::KEYBD_EVENT_FLAGS::default(),
                     time: 0,
                     dwExtraInfo: 0,
                 },
@@ -97,7 +97,7 @@ fn send_ctrl_v() -> Result<(), InjectionError> {
                 ki: KEYBDINPUT {
                     wVk: vk_v,
                     wScan: 0,
-                    dwFlags: Default::default(),
+                    dwFlags: windows::Win32::UI::Input::KeyboardAndMouse::KEYBD_EVENT_FLAGS::default(),
                     time: 0,
                     dwExtraInfo: 0,
                 },

@@ -54,7 +54,7 @@ pub fn run() {
             }
 
             build_tray(app)?;
-            register_ptt_shortcut(app)?;
+            register_ptt_shortcut(app);
 
             // DictationEngine::start calls tokio::spawn, which requires a Tokio context.
             // Tauri setup runs synchronously on the main thread, so we enter the runtime context
@@ -82,7 +82,7 @@ async fn ensure_model_exists<R: tauri::Runtime>(
     let app_data = app
         .path()
         .app_data_dir()
-        .map_err(|e| anyhow::anyhow!("Failed to get app data dir: {}", e))?;
+        .map_err(|e| anyhow::anyhow!("Failed to get app data dir: {e}"))?;
     std::fs::create_dir_all(&app_data)?;
     let model_path = app_data.join("ggml-large-v3-turbo.bin");
 
@@ -242,19 +242,22 @@ fn build_global_shortcut_plugin<R: tauri::Runtime>(
 /// Register `Ctrl+Space` as the push-to-talk hotkey.
 ///
 /// Slice 1 hard-codes the binding. Slice 5 reads it from settings.
-fn register_ptt_shortcut(app: &tauri::App) -> tauri::Result<()> {
-    use tauri_plugin_global_shortcut::GlobalShortcutExt;
+fn register_ptt_shortcut(app: &tauri::App) {
+    use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
     let ctrl_space = Shortcut::new(Some(Modifiers::CONTROL), Code::Space);
+    let hotkey_bus = app.state::<HotkeyBus>();
+    let bus_clone = hotkey_bus.inner().clone();
 
-    // `register` returns the plugin's own error type.
-    // Instead of failing the entire app startup, log a warning if it fails 
-    // (e.g., if another instance is already running).
-    if let Err(e) = app.global_shortcut().register(ctrl_space) {
+    if let Err(e) = app.global_shortcut().on_shortcut(ctrl_space, move |_app, _shortcut, event| {
+        if event.state == ShortcutState::Pressed {
+            let _ = bus_clone.try_send(HotkeyEvent::PushToTalkPressed);
+        } else if event.state == ShortcutState::Released {
+            let _ = bus_clone.try_send(HotkeyEvent::PushToTalkReleased);
+        }
+    }) {
         tracing::warn!("Failed to register push-to-talk hotkey (Ctrl+Space): {e}. Is ContextFlow already running?");
     } else {
         info!(accelerator = "Ctrl+Space", "registered push-to-talk hotkey");
     }
-
-    Ok(())
 }

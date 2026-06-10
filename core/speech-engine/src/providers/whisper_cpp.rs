@@ -20,7 +20,7 @@ impl WhisperCppProvider {
     pub fn new(model_path: PathBuf) -> Result<Self, SpeechError> {
         let params = WhisperContextParameters::default();
         let context = WhisperContext::new_with_params(&model_path.to_string_lossy(), params)
-            .map_err(|e| SpeechError::InitFailed(format!("Failed to load Whisper model: {}", e)))?;
+            .map_err(|e| SpeechError::InitFailed(format!("Failed to load Whisper model: {e}")))?;
         
         Ok(Self {
             context: Arc::new(context),
@@ -79,7 +79,7 @@ impl SpeechProvider for WhisperCppProvider {
                 // so we divide by 32767.0 here for bit-exact round-trip.
                 // (32768.0 would introduce a 0.003% amplitude error.)
                 let audio_f32: Vec<f32> = audio_buffer.into_iter()
-                    .map(|s| (s as f32) / 32767.0)
+                    .map(|s| f32::from(s) / 32767.0)
                     .collect();
 
                 // ── No silence trimming ──
@@ -115,7 +115,7 @@ impl SpeechProvider for WhisperCppProvider {
                     params.set_language(Some("en"));
                 }
 
-                if let Err(e) = state.full(params, &trimmed) {
+                if let Err(e) = state.full(params, trimmed) {
                     let _ = events_tx.blocking_send(TranscriptEvent::Error {
                         message: format!("inference failed: {e}"),
                         recoverable: false,
@@ -123,7 +123,7 @@ impl SpeechProvider for WhisperCppProvider {
                     return;
                 }
 
-                let num_segments = state.full_n_segments().unwrap_or_else(|_| 0);
+                let num_segments = state.full_n_segments().unwrap_or(0);
 
                 let mut final_text = String::new();
                 for i in 0..num_segments {

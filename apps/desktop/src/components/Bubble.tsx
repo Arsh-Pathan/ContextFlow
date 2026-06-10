@@ -115,16 +115,16 @@ export function Bubble({ status, level, message, provider, warning }: BubbleProp
   let spinDuration = "4s";
 
   if (status === "listening") {
-    shadowClass = "shadow-[0_0_24px_rgba(16,185,129,0.4)]";
-    gradientStyle = "conic-gradient(from 0deg, transparent 0%, #10b981 30%, white 50%, #10b981 70%, transparent 100%)";
+    shadowClass = "shadow-[0_0_24px_rgba(16,185,129,0.5)]";
+    gradientStyle = "conic-gradient(from 0deg, transparent 0%, #10b981 30%, #0e7490 50%, #10b981 70%, transparent 100%)";
     spinDuration = "2s";
   } else if (status === "processing") {
-    shadowClass = "shadow-[0_0_24px_rgba(56,189,248,0.4)]";
-    gradientStyle = "conic-gradient(from 0deg, transparent 0%, #38bdf8 30%, white 50%, #38bdf8 70%, transparent 100%)";
-    spinDuration = "1.5s";
+    shadowClass = "shadow-[0_0_24px_rgba(14,116,144,0.5)]";
+    gradientStyle = "conic-gradient(from 0deg, transparent 0%, #0ea5e9 30%, #0e7490 50%, #0ea5e9 70%, transparent 100%)";
+    spinDuration = "1s";
   } else if (status === "error") {
     shadowClass = "shadow-[0_0_24px_rgba(244,63,94,0.4)]";
-    gradientStyle = "conic-gradient(from 0deg, transparent 0%, #f43f5e 30%, white 50%, #f43f5e 70%, transparent 100%)";
+    gradientStyle = "conic-gradient(from 0deg, transparent 0%, #f43f5e 30%, #be123c 50%, #f43f5e 70%, transparent 100%)";
     spinDuration = "0s"; // Stop spinning on error
   }
 

@@ -82,28 +82,10 @@ impl SpeechProvider for WhisperCppProvider {
                     .map(|s| (s as f32) / 32767.0)
                     .collect();
 
-                // ── Gentle silence trimming ──
-                // Strip leading/trailing silence so whisper doesn't process
-                // long stretches of nothing. Only trim if there's clearly
-                // speech somewhere in the buffer.
-                const SILENCE_THRESHOLD: f32 = 0.0005; // ~-66 dBFS — very permissive
-                const MARGIN_SAMPLES: usize = 160;     // 10 ms at 16 kHz
-                let first = audio_f32.iter()
-                    .position(|&s| s.abs() > SILENCE_THRESHOLD)
-                    .unwrap_or(0);
-                let trimmed = if first > 0 && first < audio_f32.len() / 2 {
-                    let last = audio_f32.iter()
-                        .rposition(|&s| s.abs() > SILENCE_THRESHOLD)
-                        .map(|i| i + 1)
-                        .unwrap_or(audio_f32.len());
-                    let end = (last + MARGIN_SAMPLES).min(audio_f32.len());
-                    let start = first.saturating_sub(MARGIN_SAMPLES);
-                    &audio_f32[start..end]
-                } else {
-                    &audio_f32[..]
-                };
-
-                debug!("trimmed from {} to {} samples", audio_f32.len(), trimmed.len());
+                // ── No silence trimming ──
+                // Whisper handles silence natively. Aggressive trimming cuts off phonemes
+                // and degrades transcription accuracy, especially with large-v3 models.
+                let trimmed = &audio_f32[..];
 
                 let mut state = match context.create_state() {
                     Ok(s) => s,

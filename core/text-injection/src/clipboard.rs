@@ -55,8 +55,9 @@ fn inject_blocking(text: &str) -> Result<(), InjectionError> {
     send_ctrl_v()?;
 
     // 4. Wait for the host app to process the paste message before restoring.
-    // If we restore too fast, the app pastes the old content.
-    std::thread::sleep(Duration::from_millis(50));
+    // If we restore too fast, the app pastes the old content. We use 250ms because
+    // some apps (like Electron or browsers) can be slow to read the clipboard.
+    std::thread::sleep(Duration::from_millis(250));
 
     // 5. Restore old text (if there was any)
     if !old_text.is_empty() {

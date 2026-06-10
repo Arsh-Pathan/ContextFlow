@@ -1,40 +1,64 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" fill="none">
   <defs>
+    <style>
+      .text-title { fill: #ffffff; }
+      .text-sub { fill: #94a3b8; }
+      @media (prefers-color-scheme: light) {
+        .text-title { fill: #0f172a; }
+        .text-sub { fill: #475569; }
+      }
+    </style>
     <linearGradient id="brand" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#10b981"/>
       <stop offset="100%" stop-color="#0e7490"/>
     </linearGradient>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#070a14"/>
-      <stop offset="100%" stop-color="#0f172a"/>
+    <linearGradient id="borderGradient" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#0e7490" stop-opacity="0"/>
+      <stop offset="30%" stop-color="#0e7490"/>
+      <stop offset="50%" stop-color="#10b981"/>
+      <stop offset="70%" stop-color="#0e7490"/>
+      <stop offset="100%" stop-color="#0e7490" stop-opacity="0"/>
     </linearGradient>
-    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation="16" result="blur"/>
+    <filter id="glowInner" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
       <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+    <filter id="glowOuter" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="24" result="blur"/>
     </filter>
   </defs>
 
-  <!-- Dark Background -->
-  <rect width="1200" height="400" fill="url(#bg)"/>
+  <!-- Huge Logo Watermark Showoff (Centered in the background) -->
+  <g transform="translate(600, 200)" opacity="0.08">
+    <circle cx="0" cy="0" r="160" fill="url(#brand)"/>
+    <circle cx="0" cy="0" r="48" fill="white"/>
+  </g>
 
   <!-- Centered content -->
   <g transform="translate(600, 180)">
     
-    <!-- Voice Bar Demo -->
+    <!-- Voice Bar Demo (Accurately detailed) -->
     <g transform="translate(0, -60)">
-      <!-- Outer Glow -->
-      <rect x="-184" y="-48" width="368" height="96" rx="48" fill="none" stroke="url(#brand)" stroke-width="16" opacity="0.4" filter="url(#glow)"/>
       
-      <!-- App Container -->
-      <rect x="-180" y="-44" width="360" height="88" rx="44" fill="#1a1a1a" stroke="#333" stroke-width="2"/>
+      <!-- Ambient Outer Glow -->
+      <rect x="-180" y="-44" width="360" height="88" rx="44" fill="none" stroke="#10b981" stroke-width="8" opacity="0.3" filter="url(#glowOuter)"/>
+      
+      <!-- Inner Dark Box -->
+      <rect x="-180" y="-44" width="360" height="88" rx="44" fill="#1a1a1a"/>
+      
+      <!-- Sharp Gradient Border (Mimicking conic gradient) -->
+      <rect x="-180" y="-44" width="360" height="88" rx="44" fill="none" stroke="url(#borderGradient)" stroke-width="4" filter="url(#glowInner)"/>
+      <rect x="-180" y="-44" width="360" height="88" rx="44" fill="none" stroke="url(#borderGradient)" stroke-width="4"/>
       
       <!-- ContextFlow Logo -->
       <g transform="translate(-132, 0)">
+        <!-- Logo Glow -->
+        <circle cx="0" cy="0" r="28" fill="url(#brand)" opacity="0.5" filter="url(#glowInner)"/>
         <circle cx="0" cy="0" r="28" fill="url(#brand)"/>
         <circle cx="0" cy="0" r="8" fill="white" fill-opacity="0.85"/>
       </g>
 
-      <!-- Audio Visualizer Dots (Accurate to code: 6 bars, scaled to 10px wide, varying heights) -->
+      <!-- Audio Visualizer Dots (Scaled perfectly to match exact UI behavior) -->
       <rect x="-55" y="-12" width="10" height="24" rx="5" fill="white"/>
       <rect x="-35" y="-24" width="10" height="48" rx="5" fill="white"/>
       <rect x="-15" y="-32" width="10" height="64" rx="5" fill="white"/>
@@ -50,12 +74,12 @@
     </g>
 
     <!-- Title -->
-    <text x="0" y="60" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="64" font-weight="700" fill="white" letter-spacing="-0.03em">
+    <text x="0" y="60" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="64" font-weight="700" class="text-title" letter-spacing="-0.03em">
       ContextFlow
     </text>
 
     <!-- Tagline -->
-    <text x="0" y="110" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="22" fill="#94a3b8" font-weight="400" letter-spacing="0.01em">
+    <text x="0" y="110" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="22" class="text-sub" font-weight="400" letter-spacing="0.01em">
       Windows-native AI voice dictation. Your thoughts, in flow.
     </text>
   </g>

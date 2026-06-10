@@ -247,12 +247,14 @@ fn register_ptt_shortcut(app: &tauri::App) -> tauri::Result<()> {
 
     let ctrl_space = Shortcut::new(Some(Modifiers::CONTROL), Code::Space);
 
-    // `register` returns the plugin's own error type, which doesn't `From`
-    // into `tauri::Error`. Convert via `anyhow`, which does.
-    app.global_shortcut()
-        .register(ctrl_space)
-        .map_err(|e| tauri::Error::Anyhow(anyhow::anyhow!("global hotkey: {e}")))?;
+    // `register` returns the plugin's own error type.
+    // Instead of failing the entire app startup, log a warning if it fails 
+    // (e.g., if another instance is already running).
+    if let Err(e) = app.global_shortcut().register(ctrl_space) {
+        tracing::warn!("Failed to register push-to-talk hotkey (Ctrl+Space): {e}. Is ContextFlow already running?");
+    } else {
+        info!(accelerator = "Ctrl+Space", "registered push-to-talk hotkey");
+    }
 
-    info!(accelerator = "Ctrl+Space", "registered push-to-talk hotkey");
     Ok(())
 }

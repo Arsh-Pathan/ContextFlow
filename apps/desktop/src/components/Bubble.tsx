@@ -159,8 +159,8 @@ export function Bubble({ status, level, message, provider, warning }: BubbleProp
         }}
       />
 
-      {/* Inner Content Box */}
-      <div className="relative w-full h-full rounded-[20px] bg-[#1a1a1a]">
+      {/* Inner Content Box (Glassmorphism) */}
+      <div className="relative w-full h-full rounded-[20px] bg-[#1a1a1a]/60 backdrop-blur-md">
         
         {/* Left Icon (Logo) */}
         <div className={`absolute left-2.5 top-1/2 -translate-y-1/2 flex items-center justify-center w-7 h-7 rounded-full overflow-hidden transition-all duration-300 ${

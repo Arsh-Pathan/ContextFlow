@@ -43,8 +43,8 @@
       <!-- Ambient Outer Glow -->
       <rect x="-180" y="-44" width="360" height="88" rx="44" fill="none" stroke="#10b981" stroke-width="8" opacity="0.3" filter="url(#glowOuter)"/>
       
-      <!-- Inner Dark Box -->
-      <rect x="-180" y="-44" width="360" height="88" rx="44" fill="#1a1a1a"/>
+      <!-- Inner Dark Box (Glassy) -->
+      <rect x="-180" y="-44" width="360" height="88" rx="44" fill="rgba(26,26,26,0.6)"/>
       
       <!-- Sharp Gradient Border (Mimicking conic gradient) -->
       <rect x="-180" y="-44" width="360" height="88" rx="44" fill="none" stroke="url(#borderGradient)" stroke-width="4" filter="url(#glowInner)"/>

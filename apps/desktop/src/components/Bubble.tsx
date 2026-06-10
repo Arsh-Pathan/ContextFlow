@@ -58,10 +58,10 @@ export function Bubble({ status, level, message, provider, warning }: BubbleProp
       const distanceToCenter = Math.abs((numDots - 1) / 2 - i);
       const curve = 1 - (distanceToCenter / ((numDots - 1) / 2)) * 0.35;
 
-      // Gentle gain — just enough to show movement without jitter
-      const baseGain = smoothed * 6;
+      // Increased gain to make dots much more responsive to voice
+      const baseGain = smoothed * 15;
 
-      scaleY = 1 + Math.min(1.6, baseGain * curve);
+      scaleY = 1 + Math.min(3.0, baseGain * curve);
     }
 
     const delayMs = i * 150;
@@ -116,15 +116,15 @@ export function Bubble({ status, level, message, provider, warning }: BubbleProp
 
   if (status === "listening") {
     shadowClass = "shadow-[0_0_24px_rgba(16,185,129,0.5)]";
-    gradientStyle = "conic-gradient(from 0deg, transparent 0%, transparent 30%, #0e7490 40%, #10b981 48%, #ffffff 50%, transparent 50%, transparent 80%, #0e7490 90%, #10b981 98%, #ffffff 100%)";
-    spinDuration = "2.5s";
+    gradientStyle = "conic-gradient(from 0deg, transparent 0%, #0e7490 30%, #10b981 50%, #0e7490 70%, transparent 100%)";
+    spinDuration = "2s";
   } else if (status === "processing") {
     shadowClass = "shadow-[0_0_24px_rgba(14,116,144,0.5)]";
-    gradientStyle = "conic-gradient(from 0deg, transparent 0%, transparent 30%, #0ea5e9 40%, #38bdf8 48%, #ffffff 50%, transparent 50%, transparent 80%, #0ea5e9 90%, #38bdf8 98%, #ffffff 100%)";
-    spinDuration = "1.5s";
+    gradientStyle = "conic-gradient(from 0deg, transparent 0%, #0ea5e9 30%, #0e7490 50%, #0ea5e9 70%, transparent 100%)";
+    spinDuration = "1s";
   } else if (status === "error") {
     shadowClass = "shadow-[0_0_24px_rgba(244,63,94,0.4)]";
-    gradientStyle = "conic-gradient(from 0deg, transparent 0%, transparent 30%, #be123c 40%, #f43f5e 48%, #ffffff 50%, transparent 50%, transparent 80%, #be123c 90%, #f43f5e 98%, #ffffff 100%)";
+    gradientStyle = "conic-gradient(from 0deg, transparent 0%, #be123c 30%, #f43f5e 50%, #be123c 70%, transparent 100%)";
     spinDuration = "0s"; // Stop spinning on error
   }
 
@@ -136,14 +136,14 @@ export function Bubble({ status, level, message, provider, warning }: BubbleProp
       role="status"
       aria-label={ariaLabel}
       title={tooltip}
-      className={`relative h-[44px] rounded-[22px] overflow-hidden p-[1.5px] transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] ${wrapperClass} ${shadowClass}`}
+      className={`relative h-[44px] rounded-[22px] overflow-hidden p-[2px] transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] ${wrapperClass} ${shadowClass}`}
       data-status={status}
     >
       <style>{`
         @keyframes processing-wave {
           0%, 100% { transform: translateY(0); opacity: 0.4; }
-          25% { transform: translateY(-12px); opacity: 1; }
-          75% { transform: translateY(12px); opacity: 1; }
+          25% { transform: translateY(-4px); opacity: 1; }
+          75% { transform: translateY(4px); opacity: 1; }
         }
         @keyframes idle-breathe {
           0%, 100% { opacity: 0.3; transform: scale(1); }
@@ -165,6 +165,7 @@ export function Bubble({ status, level, message, provider, warning }: BubbleProp
         className="absolute -inset-[150%] rounded-full opacity-90"
         style={{
           background: gradientStyle,
+          filter: "blur(6px)",
           animation: spinDuration === "0s" ? "none" : `spin-gradient ${spinDuration} linear infinite`
         }}
       />

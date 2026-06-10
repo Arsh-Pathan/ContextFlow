@@ -14,9 +14,6 @@
     </filter>
   </defs>
 
-  <!-- Clean dark background -->
-  <rect width="1200" height="400" fill="url(#bg)"/>
-
   <!-- Centered content -->
   <g transform="translate(600, 160)">
     

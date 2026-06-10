@@ -21,7 +21,6 @@ use tauri::{
     tray::TrayIconBuilder,
     AppHandle, Emitter, Manager,
 };
-use tauri_plugin_global_shortcut::{Code, Modifiers, Shortcut};
 use tracing::{error, info};
 
 use contextflow_dictation_engine::{DictationEngine, DictationHandle, StatusEmitter};
@@ -243,19 +242,14 @@ fn build_global_shortcut_plugin<R: tauri::Runtime>(
 ///
 /// Slice 1 hard-codes the binding. Slice 5 reads it from settings.
 fn register_ptt_shortcut(app: &tauri::App) {
-    use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
+    use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut};
 
     let ctrl_space = Shortcut::new(Some(Modifiers::CONTROL), Code::Space);
-    let hotkey_bus = app.state::<HotkeyBus>();
-    let bus_clone = hotkey_bus.inner().clone();
 
-    if let Err(e) = app.global_shortcut().on_shortcut(ctrl_space, move |_app, _shortcut, event| {
-        if event.state == ShortcutState::Pressed {
-            let _ = bus_clone.try_send(HotkeyEvent::PushToTalkPressed);
-        } else if event.state == ShortcutState::Released {
-            let _ = bus_clone.try_send(HotkeyEvent::PushToTalkReleased);
-        }
-    }) {
+    // `register` returns the plugin's own error type.
+    // Instead of failing the entire app startup, log a warning if it fails 
+    // (e.g., if another instance is already running).
+    if let Err(e) = app.global_shortcut().register(ctrl_space) {
         tracing::warn!("Failed to register push-to-talk hotkey (Ctrl+Space): {e}. Is ContextFlow already running?");
     } else {
         info!(accelerator = "Ctrl+Space", "registered push-to-talk hotkey");

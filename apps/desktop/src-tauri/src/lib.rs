@@ -53,7 +53,27 @@ pub fn run() {
             }
 
             build_tray(app)?;
-            register_ptt_shortcut(app);
+
+            let handle_for_shortcuts = app.handle().clone();
+            register_ptt_shortcut(&handle_for_shortcuts);
+
+            // Spawn a background task to detect sleep/wake cycles and re-register the hotkey.
+            // Windows frequently drops global shortcuts on wake from sleep or if the thread stalls.
+            tokio::spawn(async move {
+                let mut interval = tokio::time::interval(std::time::Duration::from_secs(5));
+                let mut last_tick = std::time::SystemTime::now();
+                loop {
+                    interval.tick().await;
+                    let now = std::time::SystemTime::now();
+                    if let Ok(duration) = now.duration_since(last_tick) {
+                        if duration > std::time::Duration::from_secs(15) {
+                            tracing::info!("Detected system wake or time jump. Re-registering hotkey...");
+                            register_ptt_shortcut(&handle_for_shortcuts);
+                        }
+                    }
+                    last_tick = now;
+                }
+            });
 
             // DictationEngine::start calls tokio::spawn, which requires a Tokio context.
             // Tauri setup runs synchronously on the main thread, so we enter the runtime context
@@ -241,10 +261,13 @@ fn build_global_shortcut_plugin<R: tauri::Runtime>(
 /// Register `Ctrl+Space` as the push-to-talk hotkey.
 ///
 /// Slice 1 hard-codes the binding. Slice 5 reads it from settings.
-fn register_ptt_shortcut(app: &tauri::App) {
+fn register_ptt_shortcut(app: &tauri::AppHandle) {
     use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut};
 
     let ctrl_space = Shortcut::new(Some(Modifiers::CONTROL), Code::Space);
+
+    // Unregister first in case it's in a stuck state
+    let _ = app.global_shortcut().unregister(ctrl_space);
 
     // `register` returns the plugin's own error type.
     // Instead of failing the entire app startup, log a warning if it fails 

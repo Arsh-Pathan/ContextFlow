@@ -44,6 +44,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, Some(vec![])))
         .plugin(build_global_shortcut_plugin(hotkey_bus.sender()))
+        .invoke_handler(tauri::generate_handler![open_settings, close_settings])
         .manage(hotkey_bus)
         .setup(move |app| {
             // Enable autostart
@@ -208,16 +209,20 @@ async fn start_dictation_engine<R: tauri::Runtime>(
 /// The menu lives entirely in the Rust shell — no IPC roundtrip — so it
 /// responds even if the UI webview is busy.
 fn build_tray(app: &mut tauri::App) -> tauri::Result<()> {
+    let settings = MenuItem::with_id(app, "settings", "Settings…", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "Quit ContextFlow", true, None::<&str>)?;
     let show = MenuItem::with_id(app, "show", "Show bubble", true, None::<&str>)?;
     let hide = MenuItem::with_id(app, "hide", "Hide bubble", true, None::<&str>)?;
-    let menu = Menu::with_items(app, &[&show, &hide, &quit])?;
+    let menu = Menu::with_items(app, &[&settings, &show, &hide, &quit])?;
 
     let _tray = TrayIconBuilder::with_id("contextflow-tray")
         .tooltip("ContextFlow")
         .menu(&menu)
         .show_menu_on_left_click(false)
         .on_menu_event(|app, event| match event.id.as_ref() {
+            "settings" => {
+                show_settings_window(app);
+            }
             "quit" => {
                 info!("tray: quit requested");
                 app.exit(0);
@@ -239,6 +244,35 @@ fn build_tray(app: &mut tauri::App) -> tauri::Result<()> {
         .build(app)?;
 
     Ok(())
+}
+
+/// Show and focus the settings window, creating nothing (it is declared in
+/// `tauri.conf.json` as a hidden window). Centralised so both the tray menu
+/// and the IPC command share one path.
+fn show_settings_window<R: tauri::Runtime>(app: &AppHandle<R>) {
+    if let Some(w) = app.get_webview_window("settings") {
+        let _ = w.show();
+        let _ = w.unminimize();
+        if let Err(e) = w.set_focus() {
+            tracing::warn!("failed to focus settings window: {e}");
+        }
+    } else {
+        tracing::warn!("settings window not found");
+    }
+}
+
+/// IPC command so the UI (e.g. an in-app button) can open settings too.
+#[tauri::command]
+fn open_settings(app: AppHandle) {
+    show_settings_window(&app);
+}
+
+/// IPC command to hide the settings window (its custom titlebar close button).
+#[tauri::command]
+fn close_settings(app: AppHandle) {
+    if let Some(w) = app.get_webview_window("settings") {
+        let _ = w.hide();
+    }
 }
 
 /// Build the global-shortcut plugin with our bridge as the handler.

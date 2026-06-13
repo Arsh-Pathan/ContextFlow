@@ -10,6 +10,16 @@
   body {
     background: transparent;
   }
+
+  /* The settings window is a normal opaque surface, themed by --cf-bg. The
+     window itself is `transparent: true` so we can round its corners; the
+     rounded canvas is painted by the app shell, not the body. */
+  html[data-cf-window="settings"],
+  html[data-cf-window="settings"] body {
+    background: transparent;
+    color: var(--cf-text);
+    overflow: hidden;
+  }
 }
 
 @layer components {

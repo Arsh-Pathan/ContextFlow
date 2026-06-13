@@ -20,12 +20,17 @@ export default [
         ecmaFeatures: { jsx: true },
       },
       globals: {
-        // Browser globals — minimal set the bubble uses.
+        // Browser globals used across the bubble + settings windows.
         window: "readonly",
         document: "readonly",
         console: "readonly",
         Window: "readonly",
         HTMLElement: "readonly",
+        localStorage: "readonly",
+        URLSearchParams: "readonly",
+        structuredClone: "readonly",
+        setTimeout: "readonly",
+        clearTimeout: "readonly",
         // Node globals — vite.config.ts reads process.env.
         process: "readonly",
         __dirname: "readonly",

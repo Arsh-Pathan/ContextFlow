@@ -47,7 +47,6 @@ runs entirely offline.
 - `WhisperCppProvider` (via `whisper-rs`), default model `large-v3-turbo`.
 - `FasterWhisperProvider` via a Python sidecar (gRPC over Unix-domain pipe).
 - Model manager: first-run download with progress UI, integrity checks, cache.
-- Streaming transcription with partial results displayed in the bubble.
 - VAD improvements: configurable thresholds, "whisper mode" (lower energy floor + noise suppression).
 - GPU acceleration via CUDA / DirectML when available; clean CPU fallback.
 - Benchmark harness comparing providers on a fixed corpus: latency, accuracy (WER), memory, CPU/GPU.

@@ -29,6 +29,7 @@ import { AiProviderPanel } from "./panels/AiProviderPanel";
 import { FeaturesPanel } from "./panels/FeaturesPanel";
 import { AboutPanel } from "./panels/AboutPanel";
 import { AmbientBackground } from "./components/AmbientBackground";
+import { Logo } from "../components/Logo";
 
 type SectionId = "general" | "appearance" | "ai" | "features" | "about";
 
@@ -82,7 +83,7 @@ export function SettingsApp() {
               boxShadow: "0 0 14px rgba(var(--cf-glow-rgb),0.45)",
             }}
           >
-            <img src="/contextflow.svg" alt="" className="h-5 w-5 object-contain" />
+            <Logo className="h-5 w-5 object-contain" />
           </div>
           <div className="leading-tight">
             <div className="font-display text-[14px] font-semibold text-cf-text">

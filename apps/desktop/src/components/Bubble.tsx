@@ -1,6 +1,7 @@
 import { useRef, type CSSProperties } from "react";
 import { X } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { Logo } from "./Logo";
 
 export type DictationStatus = "idle" | "listening" | "processing" | "error";
 
@@ -144,7 +145,7 @@ export function Bubble({ status, level, message, provider, warning }: BubbleProp
     status === "listening"
       ? "2s"
       : status === "processing"
-        ? "1s"
+        ? "0.5s"
         : status === "error"
           ? "0s" // Stop spinning on error
           : "4s";
@@ -164,11 +165,6 @@ export function Bubble({ status, level, message, provider, warning }: BubbleProp
     boxShadow,
     ["--cf-aurora-gradient" as string]: gradientStyle,
   } as CSSProperties;
-
-  const logoGlow =
-    status === "idle"
-      ? undefined
-      : `drop-shadow(0 0 8px color-mix(in srgb, ${colors.near} 60%, transparent))`;
 
   return (
     <div
@@ -202,20 +198,15 @@ export function Bubble({ status, level, message, provider, warning }: BubbleProp
         style={{ background: "var(--cf-bubble-surface)" }}
       >
         {/* Left Icon (Logo) */}
-        <div
-          className="absolute left-2.5 top-1/2 -translate-y-1/2 flex items-center justify-center w-7 h-7 rounded-full overflow-hidden transition-all duration-300"
-          style={{ filter: logoGlow }}
-        >
-          <img
-            src="/contextflow.svg"
-            alt="ContextFlow Logo"
+        <div className="absolute left-2.5 top-1/2 -translate-y-1/2 flex items-center justify-center w-7 h-7 rounded-full overflow-hidden transition-all duration-300">
+          <Logo
             className={`w-full h-full object-cover transition-all duration-300 ${
-              status === "processing"
-                ? "hue-rotate-60 brightness-110"
-                : status === "error"
-                  ? "hue-rotate-180 brightness-110"
-                  : ""
+              status !== "idle" ? "brightness-110" : ""
             }`}
+            style={{
+              ["--logo-color-1" as string]: status === "idle" ? "var(--cf-accent)" : colors.near,
+              ["--logo-color-2" as string]: status === "idle" ? "var(--cf-accent-2)" : colors.far,
+            }}
           />
         </div>
 

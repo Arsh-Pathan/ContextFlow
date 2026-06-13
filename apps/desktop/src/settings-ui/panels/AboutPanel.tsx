@@ -2,6 +2,7 @@
  * About panel — identity, philosophy, and a live themed flourish.
  */
 import { THEMES } from "../../theme";
+import { Logo } from "../../components/Logo";
 
 export function AboutPanel() {
   return (
@@ -28,9 +29,7 @@ export function AboutPanel() {
               boxShadow: "0 0 28px rgba(var(--cf-glow-rgb),0.5)",
             }}
           >
-            <img
-              src="/contextflow.svg"
-              alt="ContextFlow"
+            <Logo
               className="h-10 w-10 object-contain"
             />
           </div>

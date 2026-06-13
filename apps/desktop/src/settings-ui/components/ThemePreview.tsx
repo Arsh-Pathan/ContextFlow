@@ -10,6 +10,7 @@
 import { useMemo } from "react";
 
 import { themeStyleVars, type Theme } from "../../theme";
+import { Logo } from "../../components/Logo";
 
 export function ThemePreview({
   theme,
@@ -41,29 +42,63 @@ export function ThemePreview({
         className="relative h-[88px] w-full overflow-hidden"
         style={{ background: "var(--cf-bg)" }}
       >
-        {/* faint elevated card to show surface contrast */}
-        <div
-          className="absolute inset-x-3 top-3 h-7 rounded-md"
-          style={{ background: "var(--cf-bg-elevated)", border: "1px solid var(--cf-border)" }}
-        />
-        {/* mini bubble */}
-        <div className="absolute bottom-3 left-1/2 flex h-8 -translate-x-1/2 items-center gap-2 rounded-full px-2.5"
-          style={{ background: "var(--cf-bubble-surface)", boxShadow: "0 0 16px rgba(var(--cf-glow-rgb),0.45)" }}
-        >
-          <span className="h-3 w-3 rounded-full" style={{ background: "var(--cf-accent)" }} />
-          <span className="flex items-end gap-[3px]">
-            {[0.5, 0.85, 1, 0.7, 0.45].map((h, i) => (
-              <span
-                key={i}
-                className="w-[3px] rounded-full"
-                style={{
-                  height: `${4 + h * 12}px`,
-                  background: "var(--cf-listen)",
-                  animation: `processing-wave 1.2s ease-in-out ${i * 120}ms infinite`,
-                }}
-              />
-            ))}
-          </span>
+        {/* faithful mini bubble recreation (listening state) */}
+        <div className="absolute bottom-1/2 translate-y-1/2 left-1/2 flex -translate-x-1/2 items-center justify-center pointer-events-none">
+          <div
+            className="relative h-[34px] w-[136px] rounded-[17px] overflow-hidden p-[1.5px]"
+            style={{
+              boxShadow: "0 0 16px color-mix(in srgb, var(--cf-listen) 50%, transparent)",
+              ["--cf-aurora-gradient" as string]: "conic-gradient(from 0deg, transparent 0%, var(--cf-listen-2) 30%, var(--cf-listen) 50%, var(--cf-listen-2) 70%, transparent 100%)"
+            }}
+            data-status="listening"
+          >
+            {/* aurora gradient background */}
+            <div
+              className="cf-aurora absolute -inset-[150%] rounded-full opacity-90"
+              style={{
+                background: "var(--cf-aurora-gradient)",
+                filter: "blur(4px)",
+                animation: "spin-gradient 2s linear infinite"
+              }}
+            />
+            {/* motion overlays */}
+            <div className="cf-flame-overlay" aria-hidden />
+            <div className="cf-glitch-overlay" aria-hidden />
+
+            {/* inner bubble box */}
+            <div className="relative w-full h-full rounded-[15.5px] flex items-center" style={{ background: "var(--cf-bubble-surface)" }}>
+              {/* Logo icon */}
+              <div className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center justify-center w-5 h-5 rounded-full overflow-hidden">
+                <Logo
+                  className="w-full h-full object-cover brightness-110"
+                  style={{
+                    ["--logo-color-1" as string]: "var(--cf-accent)",
+                    ["--logo-color-2" as string]: "var(--cf-accent-2)"
+                  }}
+                />
+              </div>
+
+              {/* Visualizer dots */}
+              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex gap-[4px] items-center justify-center h-6">
+                {[0.3, 0.6, 1, 0.7, 0.4, 0.2].map((h, i) => (
+                  <span
+                    key={i}
+                    className="w-[4px] rounded-full origin-center"
+                    style={{
+                      height: `${4 + h * 12}px`,
+                      background: "var(--cf-text)",
+                      animation: `processing-wave 1.2s ease-in-out ${i * 120}ms infinite`,
+                    }}
+                  />
+                ))}
+              </div>
+
+              {/* Fake close button */}
+              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center w-4 h-4 rounded-full bg-white/5 text-gray-400">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+              </div>
+            </div>
+          </div>
         </div>
         {/* accent → accent2 sweep to read the gradient identity */}
         <div

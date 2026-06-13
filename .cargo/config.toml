@@ -15,3 +15,19 @@ color = "auto"
 # Faster incremental builds on Windows by caching dep-info hashes.
 [env]
 CARGO_INCREMENTAL = "1"
+
+# CUDA host-compiler override.
+#
+# whisper-rs-sys compiles whisper.cpp's CUDA kernels with nvcc, which hard-gates
+# the host compiler to Visual Studio 2019-2022. On toolchains newer than that
+# (e.g. VS 2026 / MSVC 19.5x) nvcc aborts with:
+#   host_config.h: fatal error C1189: unsupported Microsoft Visual Studio version!
+# These flags pass `-allow-unsupported-compiler` to nvcc so the build proceeds.
+# Setting them here (rather than per-shell) means every `cargo`/`tauri dev`
+# invocation inherits the override automatically.
+#
+# NOTE: this is NVIDIA's documented "use at your own risk" escape hatch. The
+# clean long-term fix is installing the VS 2022 build tools and pointing CUDA at
+# them; remove these two lines if you do that.
+NVCC_PREPEND_FLAGS = "-allow-unsupported-compiler"
+CUDAFLAGS = "-allow-unsupported-compiler"

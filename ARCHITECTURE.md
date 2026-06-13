@@ -175,6 +175,47 @@ Slice 1 ships `SendInput` Unicode injection only. Slice 3 adds the full chain:
 The injector picks a strategy from a per-app routing table keyed on the
 focused window's process name and UIA control type.
 
+## UI surfaces, theming, and settings
+
+The webview bundle (`apps/desktop/src`) serves **two Tauri windows** from one
+`index.html`, branched in `main.tsx` on a `?window=` query param:
+
+- **`bubble`** — the floating, transparent, always-on-top dictation indicator.
+- **`settings`** — a normal resizable window opened from the tray ("Settings…")
+  or the `open_settings` IPC command. Decorations are off; the React shell
+  paints its own rounded canvas and titlebar.
+
+Both windows mount inside a single `SettingsProvider`, so theme and feature
+state are shared and consistent.
+
+### Theming (`src/theme/`)
+
+A theme is **colour + motion only** — it never changes layout or behaviour.
+Each `Theme` carries a typed `ThemeColors` object of *semantic* tokens (role,
+not hue). `applyTheme` is the single DOM bridge: it expands those tokens into
+`--cf-*` CSS custom properties on `:root` and sets `data-cf-motion` /
+`data-cf-appearance`. Components reference the semantic tokens (directly or via
+the Tailwind `cf.*` colours), so switching themes only changes values.
+
+Motion personalities (`smooth`, `crisp`, `pulse`, `glitch`, `flames`, `wave`,
+`aurora`, `matrix`) are CSS-only, keyed off `data-cf-motion`, and degrade under
+`prefers-reduced-motion`. `:root` ships fallback tokens equal to the default
+theme so the first frame is correct before JS runs.
+
+### Settings (`src/settings/`)
+
+Front-end settings (active theme, AI-provider selection, feature flags) persist
+to `localStorage` and broadcast across windows via a `settings://changed` Tauri
+event (with an echo guard). This is presentation/opt-in state only; engine
+configuration (active speech provider, etc.) remains owned by the Rust
+`core/settings` crate. **Every feature flag defaults to off and every default
+reproduces the prior behaviour** — opting in is the only way to change it.
+
+The AI-provider catalog (`builtin` local default plus OpenAI / Anthropic /
+Gemini / Ollama) mirrors the planned `AiProvider` trait in `core/ai-engine`;
+the UI captures provider/model/endpoint intent. API keys are never written to
+settings — they belong in the Windows Credential Manager via the backend.
+
 ## IPC contracts
 
 The `crates/ipc-contracts` crate uses `serde` + `specta` to generate

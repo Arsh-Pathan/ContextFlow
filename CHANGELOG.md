@@ -11,6 +11,27 @@ releases.
 
 ### Added
 
+- **Settings window** — a WhisperFlow-style preferences surface opened from the
+  tray ("Settings…"), with a custom titlebar, sidebar navigation, and five
+  panels: General, Appearance, AI Provider, Features, and About. Themed live and
+  synced across windows.
+- **Theme system** — 28 hand-tuned themes (ContextFlow Dark, Tokyo Night,
+  Dracula, Nord, Solarized, Cyberpunk, White Flames, Midnight Neon, Oceanic,
+  Black & White, Minimal Dark, and more) spanning six families, plus light
+  variants. Themes change colour and motion only — never layout — via `--cf-*`
+  CSS custom properties and eight CSS-only motion personalities. The Appearance
+  panel previews each as a live miniature bubble. `contextflow-dark` is the
+  default and is identical to the previous look.
+- **AI Provider configuration** — choose the clarification/cleanup backend:
+  Built-in (on-device, default), OpenAI, Anthropic, Gemini, or Ollama, with
+  per-provider model, API key, and base-URL fields, plus a cleanup-level
+  control. AI clarification is opt-in (off by default).
+- **Feature flags** — an opt-in registry (AI clarification, voice commands,
+  personal dictionary, live transcript preview, ambient background, sound cues,
+  snippets, per-app profiles, dictation history). Every flag defaults to off, so
+  the out-of-the-box experience is unchanged.
+- Reduce-motion preference (independent of the OS setting) honoured across the
+  bubble and settings window.
 - Initial repository scaffolding: Cargo workspace layout, Tauri 2 shell, React
   + Tailwind UI scaffold.
 - Apache-2.0 license, contributor guide, architecture and roadmap docs.

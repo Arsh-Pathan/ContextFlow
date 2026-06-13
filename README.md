@@ -37,10 +37,12 @@ ContextFlow is built differently:
 | **Capture** | WASAPI loopback via cpal, 16 kHz resampling via rubato, voice activity detection via webrtc-vad, lock-free ring buffer |
 | **Speech** | Pluggable providers via `SpeechProvider` trait — whisper.cpp (CUDA-accelerated), Windows SR, faster-whisper, Deepgram, OpenAI Realtime |
 | **Injection** | Layered strategy: UI Automation → SendInput → clipboard. Falls through automatically. Per-app routing planned. |
-| **AI** | Cleanup pipeline for punctuation, filler-word removal, spoken-correction resolution |
+| **AI** | Cleanup pipeline for punctuation, filler-word removal, spoken-correction resolution. Pluggable provider: Built-in (on-device, default), OpenAI, Anthropic, Gemini, or Ollama — opt-in. |
 | **Hotkey** | Global hotkey (Ctrl+Space) with cross-app lifecycle, keyboard hook for reliable release detection |
 | **UI** | Floating bubble with audio-reactive visualizer, state-driven animations, transparent always-on-top overlay |
-| **Privacy** | All processing on-device by default. No telemetry without explicit opt-in. API keys in Windows Credential Manager. |
+| **Settings** | WhisperFlow-style preferences window (tray → Settings…): General, Appearance, AI Provider, Features, About. Live, cross-window synced. |
+| **Themes** | 28 colour + motion themes (Tokyo Night, Dracula, Nord, Solarized, Cyberpunk, White Flames, Black & White, …) — visuals only, layout preserved. |
+| **Privacy** | All processing on-device by default. No telemetry without explicit opt-in. API keys in Windows Credential Manager. Every added feature is off by default. |
 
 ---
 

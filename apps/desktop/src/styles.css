@@ -5,6 +5,32 @@
 @layer base {
   :root {
     color-scheme: dark;
+
+    /* Fallback theme tokens === the default `contextflow-dark` theme. These
+       paint correctly on first frame before SettingsProvider's effect runs,
+       and keep the bubble themed even if JS is momentarily delayed. The store
+       overwrites them inline once a theme is applied. */
+    --cf-bg: #0d0f14;
+    --cf-bg-elevated: #15181f;
+    --cf-bg-inset: #0a0c10;
+    --cf-text: #f3f5f9;
+    --cf-text-muted: #9aa4b2;
+    --cf-text-faint: #5c6675;
+    --cf-border: rgba(255, 255, 255, 0.08);
+    --cf-border-strong: rgba(255, 255, 255, 0.16);
+    --cf-accent: #10b981;
+    --cf-accent-2: #0e7490;
+    --cf-accent-contrast: #04140f;
+    --cf-listen: #10b981;
+    --cf-listen-2: #0e7490;
+    --cf-process: #0ea5e9;
+    --cf-process-2: #0e7490;
+    --cf-error: #f43f5e;
+    --cf-error-2: #be123c;
+    --cf-idle-dot: #6b7280;
+    --cf-bubble-bg: rgba(20, 22, 28, 0.78);
+    --cf-bubble-surface: #1a1a1a;
+    --cf-glow-rgb: 16, 185, 129;
   }
   /* Bubble window is transparent + click-through-able where appropriate. */
   body {
@@ -59,6 +85,17 @@
    Element targeted: the `.cf-aurora` ring inside the bubble (see Bubble.tsx).
    Defaults (smooth) intentionally match the original look.
    ──────────────────────────────────────────────────────────────────────────── */
+
+/* Motion overlays are inert by default; each is activated only under its
+   matching data-cf-motion below. Keeps them out of layout when unused. */
+.cf-flame-overlay,
+.cf-glitch-overlay {
+  display: none;
+}
+[data-cf-motion="flames"] .cf-flame-overlay,
+[data-cf-motion="glitch"] .cf-glitch-overlay {
+  display: block;
+}
 
 /* crisp — minimal themes: tighter, less blur handled inline; same spin */
 [data-cf-motion="crisp"] .cf-aurora {
@@ -129,11 +166,13 @@
 }
 [data-cf-motion="glitch"] .cf-glitch-overlay {
   position: absolute;
-  inset: -10%;
-  border-radius: inherit;
+  inset: -150%;
+  border-radius: 9999px;
   pointer-events: none;
   mix-blend-mode: screen;
-  background: inherit;
+  background: var(--cf-aurora-gradient);
+  filter: blur(6px);
+  opacity: 0.6;
   animation: cf-glitch-skip 3.4s steps(1, end) infinite;
 }
 

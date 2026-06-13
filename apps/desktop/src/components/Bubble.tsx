@@ -24,6 +24,22 @@ const PROVIDER_LABEL: Record<string, string> = {
   "windows-sr": "Windows SR (Built-in)",
 };
 
+/**
+ * Per-status colour roles, resolved from the active theme's `--cf-*` tokens.
+ * `near`/`far` are the conic-gradient stops; `glow` feeds the box-shadow; `dot`
+ * is the visualizer bar colour. The default theme reproduces the original
+ * teal/sky/rose palette exactly, so existing users see no change.
+ */
+const STATUS_COLORS: Record<
+  DictationStatus,
+  { near: string; far: string; dot: string }
+> = {
+  idle: { near: "var(--cf-idle-dot)", far: "transparent", dot: "var(--cf-idle-dot)" },
+  listening: { near: "var(--cf-listen)", far: "var(--cf-listen-2)", dot: "var(--cf-text)" },
+  processing: { near: "var(--cf-process)", far: "var(--cf-process-2)", dot: "var(--cf-process)" },
+  error: { near: "var(--cf-error)", far: "var(--cf-error-2)", dot: "var(--cf-error)" },
+};
+
 export function Bubble({ status, level, message, provider, warning }: BubbleProps) {
   const tooltipLines = [STATUS_LABEL[status]];
   if (provider) {
@@ -47,6 +63,8 @@ export function Bubble({ status, level, message, provider, warning }: BubbleProp
   const raw = level ?? 0;
   const isRising = raw > prevLevelRef.current;
   prevLevelRef.current = raw;
+
+  const colors = STATUS_COLORS[status];
 
   // 6 dots for the visualizer
   const numDots = 6;
@@ -75,7 +93,7 @@ export function Bubble({ status, level, message, provider, warning }: BubbleProp
     const delayMs = i * 150;
     const delay = `${delayMs}ms`;
 
-    let animation = 'none';
+    let animation = "none";
     if (status === "processing") {
       animation = `processing-wave 1.2s ease-in-out ${delay} infinite`;
     } else if (status === "idle") {
@@ -85,26 +103,23 @@ export function Bubble({ status, level, message, provider, warning }: BubbleProp
     }
 
     const dotStyle: CSSProperties = {
-      height: status === "listening" ? `${heightPx}px` : undefined,
-      animation: animation,
+      height:
+        status === "listening" ? `${heightPx}px` : status === "idle" ? "5px" : "5px",
+      background: colors.dot,
+      animation,
     };
 
-    const transitionClass = status === "listening"
-      ? (isRising ? "transition-[height] duration-100 ease-out" : "transition-[height] duration-500 ease-out")
-      : "transition-all duration-300 ease-in-out";
+    const transitionClass =
+      status === "listening"
+        ? isRising
+          ? "transition-[height] duration-100 ease-out"
+          : "transition-[height] duration-500 ease-out"
+        : "transition-all duration-300 ease-in-out";
 
     return (
       <div
         key={i}
-        className={`w-[5px] rounded-full origin-center ${transitionClass} ${
-          status === "processing" 
-            ? "h-[5px] bg-sky-400" 
-            : status === "error"
-              ? "h-[5px] bg-rose-500"
-              : status === "listening"
-                ? "bg-white"
-                : "h-[5px] bg-gray-500"
-        }`}
+        className={`w-[5px] rounded-full origin-center ${transitionClass}`}
         style={dotStyle}
       />
     );
@@ -118,70 +133,98 @@ export function Bubble({ status, level, message, provider, warning }: BubbleProp
     }
   };
 
-  let shadowClass = "shadow-[0_4px_24px_rgba(0,0,0,0.6)]";
-  let gradientStyle = "conic-gradient(from 0deg, transparent 0%, #333 50%, transparent 100%)";
-  let spinDuration = "4s";
+  // Conic-gradient aurora ring. Idle uses a single faint stop (and is hidden by
+  // the opacity-0 wrapper anyway); active states use the near/far stop pair.
+  const gradientStyle =
+    status === "idle"
+      ? `conic-gradient(from 0deg, transparent 0%, ${colors.near} 50%, transparent 100%)`
+      : `conic-gradient(from 0deg, transparent 0%, ${colors.far} 30%, ${colors.near} 50%, ${colors.far} 70%, transparent 100%)`;
 
-  if (status === "listening") {
-    shadowClass = "shadow-[0_0_24px_rgba(16,185,129,0.5)]";
-    gradientStyle = "conic-gradient(from 0deg, transparent 0%, #0e7490 30%, #10b981 50%, #0e7490 70%, transparent 100%)";
-    spinDuration = "2s";
-  } else if (status === "processing") {
-    shadowClass = "shadow-[0_0_24px_rgba(14,116,144,0.5)]";
-    gradientStyle = "conic-gradient(from 0deg, transparent 0%, #0ea5e9 30%, #0e7490 50%, #0ea5e9 70%, transparent 100%)";
-    spinDuration = "1s";
-  } else if (status === "error") {
-    shadowClass = "shadow-[0_0_24px_rgba(244,63,94,0.4)]";
-    gradientStyle = "conic-gradient(from 0deg, transparent 0%, #be123c 30%, #f43f5e 50%, #be123c 70%, transparent 100%)";
-    spinDuration = "0s"; // Stop spinning on error
-  }
+  const spinDuration =
+    status === "listening"
+      ? "2s"
+      : status === "processing"
+        ? "1s"
+        : status === "error"
+          ? "0s" // Stop spinning on error
+          : "4s";
+
+  // Status-tinted glow; idle keeps the original neutral drop shadow.
+  const boxShadow =
+    status === "idle"
+      ? "0 4px 24px rgba(0,0,0,0.6)"
+      : `0 0 24px color-mix(in srgb, ${colors.near} 50%, transparent)`;
 
   const isExpanded = status !== "idle";
   const wrapperClass = isExpanded ? "w-[180px] opacity-100" : "w-[44px] opacity-0";
+
+  // Expose the resolved gradient to descendant motion overlays (flames/glitch)
+  // via a custom property so CSS can paint them without re-deriving stops.
+  const wrapperStyle = {
+    boxShadow,
+    ["--cf-aurora-gradient" as string]: gradientStyle,
+  } as CSSProperties;
+
+  const logoGlow =
+    status === "idle"
+      ? undefined
+      : `drop-shadow(0 0 8px color-mix(in srgb, ${colors.near} 60%, transparent))`;
 
   return (
     <div
       role="status"
       aria-label={ariaLabel}
       title={tooltip}
-      className={`relative h-[44px] rounded-[22px] overflow-hidden p-[2px] transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] ${wrapperClass} ${shadowClass}`}
+      className={`relative h-[44px] rounded-[22px] overflow-hidden p-[2px] transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] ${wrapperClass}`}
+      style={wrapperStyle}
       data-status={status}
     >
-
-
-      {/* Spinning Gradient Border */}
-      <div 
-        className="absolute -inset-[150%] rounded-full opacity-90"
+      {/* Spinning Gradient Border (themed aurora) */}
+      <div
+        className="cf-aurora absolute -inset-[150%] rounded-full opacity-90"
         style={{
-          background: gradientStyle,
+          background: "var(--cf-aurora-gradient)",
           filter: "blur(6px)",
-          animation: spinDuration === "0s" ? "none" : `spin-gradient ${spinDuration} linear infinite`
+          animation:
+            spinDuration === "0s"
+              ? "none"
+              : `spin-gradient ${spinDuration} linear infinite`,
         }}
       />
 
-      {/* Inner Content Box (Glassmorphism) */}
-      <div className="relative w-full h-full rounded-[20px] bg-[#1a1a1a]">
-        
+      {/* Motion overlays — only styled under their matching data-cf-motion. */}
+      <div className="cf-flame-overlay" aria-hidden />
+      <div className="cf-glitch-overlay" aria-hidden />
+
+      {/* Inner Content Box */}
+      <div
+        className="relative w-full h-full rounded-[20px]"
+        style={{ background: "var(--cf-bubble-surface)" }}
+      >
         {/* Left Icon (Logo) */}
-        <div className={`absolute left-2.5 top-1/2 -translate-y-1/2 flex items-center justify-center w-7 h-7 rounded-full overflow-hidden transition-all duration-300 ${
-          status === "listening" ? "drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" 
-          : status === "processing" ? "drop-shadow-[0_0_8px_rgba(56,189,248,0.6)]"
-          : status === "error" ? "drop-shadow-[0_0_8px_rgba(244,63,94,0.6)]"
-          : ""
-        }`}>
-          <img 
-            src="/contextflow.svg" 
-            alt="ContextFlow Logo" 
+        <div
+          className="absolute left-2.5 top-1/2 -translate-y-1/2 flex items-center justify-center w-7 h-7 rounded-full overflow-hidden transition-all duration-300"
+          style={{ filter: logoGlow }}
+        >
+          <img
+            src="/contextflow.svg"
+            alt="ContextFlow Logo"
             className={`w-full h-full object-cover transition-all duration-300 ${
-              status === "processing" ? "hue-rotate-60 brightness-110" 
-              : status === "error" ? "hue-rotate-180 brightness-110"
-              : ""
-            }`} 
+              status === "processing"
+                ? "hue-rotate-60 brightness-110"
+                : status === "error"
+                  ? "hue-rotate-180 brightness-110"
+                  : ""
+            }`}
           />
         </div>
 
         {/* Middle Audio Visualizer Dots */}
-        <div className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex gap-[5px] items-center justify-center h-6 transition-opacity duration-300 ${isExpanded ? "opacity-100" : "opacity-0"}`}>
+        <div
+          className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex gap-[5px] items-center justify-center h-6 transition-opacity duration-300 ${
+            isExpanded ? "opacity-100" : "opacity-0"
+          }`}
+        >
           {dots}
         </div>
 

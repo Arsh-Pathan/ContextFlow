@@ -2,9 +2,9 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use tokio::sync::{mpsc};
+use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
-use tracing::{debug};
+use tracing::debug;
 use whisper_rs::{FullParams, SamplingStrategy, WhisperContext, WhisperContextParameters};
 
 use crate::error::SpeechError;
@@ -21,7 +21,7 @@ impl WhisperCppProvider {
         let params = WhisperContextParameters::default();
         let context = WhisperContext::new_with_params(&model_path.to_string_lossy(), params)
             .map_err(|e| SpeechError::InitFailed(format!("Failed to load Whisper model: {e}")))?;
-        
+
         Ok(Self {
             context: Arc::new(context),
         })
@@ -44,7 +44,7 @@ impl SpeechProvider for WhisperCppProvider {
             network_required: false,
             whisper_mode: true,
             auto_language: true,
-            gpu_capable: true, // depends on whisper.cpp build
+            gpu_capable: true,      // depends on whisper.cpp build
             feeds_own_audio: false, // consumes audio from our pipeline
         }
     }
@@ -66,19 +66,23 @@ impl SpeechProvider for WhisperCppProvider {
                 while let Some(mut frame) = sink_rx.blocking_recv() {
                     audio_buffer.append(&mut frame);
                 }
-                
+
                 if audio_buffer.is_empty() {
                     let _ = events_tx.blocking_send(TranscriptEvent::Empty);
                     return;
                 }
 
-                debug!("utterance ended, running whisper inference on {} samples", audio_buffer.len());
+                debug!(
+                    "utterance ended, running whisper inference on {} samples",
+                    audio_buffer.len()
+                );
 
                 // whisper-rs expects f32 samples between -1 and 1.
                 // Forward conversion in capture.rs uses i16::MAX (32767),
                 // so we divide by 32767.0 here for bit-exact round-trip.
                 // (32768.0 would introduce a 0.003% amplitude error.)
-                let audio_f32: Vec<f32> = audio_buffer.into_iter()
+                let audio_f32: Vec<f32> = audio_buffer
+                    .into_iter()
                     .map(|s| f32::from(s) / 32767.0)
                     .collect();
 
@@ -108,7 +112,7 @@ impl SpeechProvider for WhisperCppProvider {
                 params.set_suppress_non_speech_tokens(true);
                 params.set_entropy_thold(2.4);
                 params.set_logprob_thold(-1.0);
-                
+
                 if let Some(ref lang) = language {
                     params.set_language(Some(lang.as_str()));
                 } else {
@@ -133,7 +137,7 @@ impl SpeechProvider for WhisperCppProvider {
                 }
 
                 let final_text = final_text.trim().to_string();
-                
+
                 if final_text.is_empty() {
                     let _ = events_tx.blocking_send(TranscriptEvent::Empty);
                 } else {
@@ -151,4 +155,3 @@ impl SpeechProvider for WhisperCppProvider {
         })
     }
 }
-

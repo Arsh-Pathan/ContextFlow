@@ -1,6 +1,7 @@
-import { SVGProps, useId } from "react";
+import type React from "react";
+import { useId } from "react";
 
-export function Logo(props: SVGProps<SVGSVGElement>) {
+export function Logo(props: React.ComponentProps<"svg">) {
   const gradientId = useId();
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" {...props}>

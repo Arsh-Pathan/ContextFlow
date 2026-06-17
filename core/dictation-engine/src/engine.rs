@@ -226,7 +226,10 @@ impl ActiveSession {
         // Destructure SpeechSession to drop the audio sink immediately.
         // This signals "end of utterance" to the provider so it can flush
         // the final transcript without waiting for a natural pause.
-        let contextflow_speech_engine::SpeechSession { audio_sink, mut events } = self.speech;
+        let contextflow_speech_engine::SpeechSession {
+            audio_sink,
+            mut events,
+        } = self.speech;
         drop(audio_sink);
 
         let final_text = wait_for_final(&mut events, FINAL_TIMEOUT).await?;
@@ -354,7 +357,7 @@ fn spawn_audio_owner(
             if block_stop_rx.try_recv().is_ok() {
                 break;
             }
-            
+
             // Forward any available audio frames to the speech provider's sink
             if let Some(ref mut rx) = frames {
                 while let Ok(frame) = rx.try_recv() {

@@ -42,7 +42,10 @@ pub fn run() {
     let hotkey_rx = hotkey_bus.subscribe();
 
     tauri::Builder::default()
-        .plugin(tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, Some(vec![])))
+        .plugin(tauri_plugin_autostart::init(
+            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+            Some(vec![]),
+        ))
         .plugin(build_global_shortcut_plugin(hotkey_bus.sender()))
         .invoke_handler(tauri::generate_handler![open_settings, close_settings])
         .manage(hotkey_bus)
@@ -68,7 +71,9 @@ pub fn run() {
                     let now = std::time::SystemTime::now();
                     if let Ok(duration) = now.duration_since(last_tick) {
                         if duration > std::time::Duration::from_secs(15) {
-                            tracing::info!("Detected system wake or time jump. Re-registering hotkey...");
+                            tracing::info!(
+                                "Detected system wake or time jump. Re-registering hotkey..."
+                            );
                             register_ptt_shortcut(&handle_for_shortcuts);
                         }
                     }
@@ -304,7 +309,7 @@ fn register_ptt_shortcut(app: &tauri::AppHandle) {
     let _ = app.global_shortcut().unregister(ctrl_space);
 
     // `register` returns the plugin's own error type.
-    // Instead of failing the entire app startup, log a warning if it fails 
+    // Instead of failing the entire app startup, log a warning if it fails
     // (e.g., if another instance is already running).
     if let Err(e) = app.global_shortcut().register(ctrl_space) {
         tracing::warn!("Failed to register push-to-talk hotkey (Ctrl+Space): {e}. Is ContextFlow already running?");

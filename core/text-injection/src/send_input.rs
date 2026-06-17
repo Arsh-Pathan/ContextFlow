@@ -100,13 +100,13 @@ fn inject_blocking(text: &str) -> Result<(), InjectionError> {
         let mut char_str = [0; 4];
         let ch_str = ch.encode_utf8(&mut char_str);
         let inputs = build_unicode_inputs(ch_str);
-        
+
         let dispatched = unsafe { SendInput(&inputs, cb_size) };
         let requested = u32::try_from(inputs.len()).unwrap_or(u32::MAX);
-        
+
         requested_total += requested;
         dispatched_total += dispatched;
-        
+
         if dispatched != requested {
             warn!(
                 requested_total,
@@ -117,11 +117,11 @@ fn inject_blocking(text: &str) -> Result<(), InjectionError> {
                 dispatched: dispatched_total,
             });
         }
-        
+
         // Typing animation delay
         thread::sleep(Duration::from_millis(15));
     }
-    
+
     debug!(chars = text.chars().count(), "text injection complete");
     Ok(())
 }

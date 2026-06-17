@@ -4,8 +4,7 @@ use std::time::Duration;
 use async_trait::async_trait;
 
 use windows::Win32::UI::Input::KeyboardAndMouse::{
-    SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_KEYUP, VK_CONTROL,
-    VIRTUAL_KEY,
+    SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_KEYUP, VIRTUAL_KEY, VK_CONTROL,
 };
 
 use crate::error::InjectionError;
@@ -84,7 +83,8 @@ fn send_ctrl_v() -> Result<(), InjectionError> {
                 ki: KEYBDINPUT {
                     wVk: VK_CONTROL,
                     wScan: 0,
-                    dwFlags: windows::Win32::UI::Input::KeyboardAndMouse::KEYBD_EVENT_FLAGS::default(),
+                    dwFlags:
+                        windows::Win32::UI::Input::KeyboardAndMouse::KEYBD_EVENT_FLAGS::default(),
                     time: 0,
                     dwExtraInfo: 0,
                 },
@@ -97,7 +97,8 @@ fn send_ctrl_v() -> Result<(), InjectionError> {
                 ki: KEYBDINPUT {
                     wVk: vk_v,
                     wScan: 0,
-                    dwFlags: windows::Win32::UI::Input::KeyboardAndMouse::KEYBD_EVENT_FLAGS::default(),
+                    dwFlags:
+                        windows::Win32::UI::Input::KeyboardAndMouse::KEYBD_EVENT_FLAGS::default(),
                     time: 0,
                     dwExtraInfo: 0,
                 },

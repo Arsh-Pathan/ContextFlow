@@ -64,13 +64,10 @@ jobs:
     name: Frontend
     runs-on: windows-latest
     # Skip until apps/desktop exists. Re-enabled in the Tauri-scaffold commit.
-    if: ${{ hashFiles('apps/desktop/package.json') != '' }}
     steps:
       - uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - uses: actions/setup-node@v4
         with:
@@ -97,7 +94,6 @@ jobs:
     name: Tauri bundle validation
     runs-on: windows-latest
     needs: [rust, frontend]
-    if: ${{ hashFiles('apps/desktop/src-tauri/Cargo.toml') != '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -109,8 +105,6 @@ jobs:
           workspaces: 'apps/desktop/src-tauri -> target'
 
       - uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - uses: actions/setup-node@v4
         with:

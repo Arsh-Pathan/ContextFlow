@@ -49,19 +49,39 @@ jobs:
         with:
           cuda: '12.4.1'
           method: 'network'
-          sub-packages: '["cublas", "cudart"]'
+          sub-packages: '["cublas", "cublas_dev", "cudart"]'
+
+      - name: Verify CUDA Installation
+        run: |
+          echo "CUDA_PATH: $env:CUDA_PATH"
+          echo "Checking cublas library..."
+          if (Test-Path "$env:CUDA_PATH\lib\x64\cublas.lib") {
+            Write-Host "cublas.lib found"
+          } else {
+            Write-Host "WARNING: cublas.lib not found at expected location"
+            Get-ChildItem "$env:CUDA_PATH\lib" -Recurse -Filter "*cublas*" 2>$null
+          }
 
       - name: cargo fmt --check
         run: cargo fmt --all -- --check
 
       - name: cargo check
         run: cargo check --workspace --all-targets
+        env:
+          CUDA_PATH: ${{ env.CUDA_PATH }}
+          PATH: ${{ env.CUDA_PATH }}\bin;${{ env.PATH }}
 
       - name: cargo clippy
         run: cargo clippy --workspace --all-targets -- -D warnings
+        env:
+          CUDA_PATH: ${{ env.CUDA_PATH }}
+          PATH: ${{ env.CUDA_PATH }}\bin;${{ env.PATH }}
 
       - name: cargo test
         run: cargo test --workspace --all-targets --no-fail-fast
+        env:
+          CUDA_PATH: ${{ env.CUDA_PATH }}
+          PATH: ${{ env.CUDA_PATH }}\bin;${{ env.PATH }}
 
   # ───────────────────────────────────────────────────────────────────────
   # Frontend: lint, typecheck, build.
@@ -116,7 +136,18 @@ jobs:
         with:
           cuda: '12.4.1'
           method: 'network'
-          sub-packages: '["cublas", "cudart"]'
+          sub-packages: '["cublas", "cublas_dev", "cudart"]'
+
+      - name: Verify CUDA Installation
+        run: |
+          echo "CUDA_PATH: $env:CUDA_PATH"
+          echo "Checking cublas library..."
+          if (Test-Path "$env:CUDA_PATH\lib\x64\cublas.lib") {
+            Write-Host "cublas.lib found"
+          } else {
+            Write-Host "WARNING: cublas.lib not found at expected location"
+            Get-ChildItem "$env:CUDA_PATH\lib" -Recurse -Filter "*cublas*" 2>$null
+          }
 
       - uses: pnpm/action-setup@v4
 
@@ -130,6 +161,9 @@ jobs:
 
       - name: tauri build (no bundle)
         run: pnpm tauri build --no-bundle
+        env:
+          CUDA_PATH: ${{ env.CUDA_PATH }}
+          PATH: ${{ env.CUDA_PATH }}\bin;${{ env.PATH }}
 
   # ───────────────────────────────────────────────────────────────────────
   # Conventional Commits check on PR titles.

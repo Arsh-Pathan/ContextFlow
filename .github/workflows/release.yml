@@ -38,7 +38,18 @@ jobs:
         with:
           cuda: '12.4.1'
           method: 'network'
-          sub-packages: '["cublas", "cudart"]'
+          sub-packages: '["cublas", "cublas_dev", "cudart"]'
+
+      - name: Verify CUDA Installation
+        run: |
+          echo "CUDA_PATH: $env:CUDA_PATH"
+          echo "Checking cublas library..."
+          if (Test-Path "$env:CUDA_PATH\lib\x64\cublas.lib") {
+            Write-Host "cublas.lib found"
+          } else {
+            Write-Host "WARNING: cublas.lib not found at expected location"
+            Get-ChildItem "$env:CUDA_PATH\lib" -Recurse -Filter "*cublas*" 2>$null
+          }
 
       - uses: pnpm/action-setup@v4
 
@@ -53,6 +64,9 @@ jobs:
       - name: Build Tauri MSIs
         # This will bundle both .msi and .exe installers based on tauri.conf.json targets
         run: pnpm tauri build
+        env:
+          CUDA_PATH: ${{ env.CUDA_PATH }}
+          PATH: ${{ env.CUDA_PATH }}\bin;${{ env.PATH }}
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2

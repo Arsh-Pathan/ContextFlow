@@ -47,8 +47,12 @@ fn main() {
         println!("cargo:rustc-link-lib=cuda");
         cfg_if::cfg_if! {
             if #[cfg(target_os = "windows")] {
-                let cuda_path = PathBuf::from(env::var("CUDA_PATH").unwrap()).join("lib/x64");
-                println!("cargo:rustc-link-search={}", cuda_path.display());
+                if let Ok(cuda_path_str) = env::var("CUDA_PATH") {
+                    let cuda_path = PathBuf::from(cuda_path_str).join("lib/x64");
+                    println!("cargo:rustc-link-search={}", cuda_path.display());
+                } else {
+                    println!("cargo:warning=CUDA_PATH not set, skipping CUDA lib search path");
+                }
             } else {
                 println!("cargo:rustc-link-lib=culibos");
                 println!("cargo:rustc-link-search=/usr/local/cuda/lib64");

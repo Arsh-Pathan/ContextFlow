@@ -60,7 +60,7 @@ pub fn run() {
 
             // Spawn a background task to detect sleep/wake cycles and re-register the hotkey.
             // Windows frequently drops global shortcuts on wake from sleep or if the thread stalls.
-            tokio::spawn(async move {
+            tauri::async_runtime::spawn(async move {
                 let mut interval = tokio::time::interval(std::time::Duration::from_secs(5));
                 let mut last_tick = std::time::SystemTime::now();
                 loop {

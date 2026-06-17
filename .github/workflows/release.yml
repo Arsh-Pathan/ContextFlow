@@ -34,9 +34,9 @@ jobs:
           workspaces: 'apps/desktop/src-tauri -> target'
 
       - name: Install CUDA Toolkit
-        uses: Jimver/cuda-toolkit@v0.2.14
+        uses: Jimver/cuda-toolkit@v0.2.35
         with:
-          cuda: '12.4.0'
+          cuda: '12.4.1'
           method: 'network'
           sub-packages: '["cublas", "cudart"]'
 

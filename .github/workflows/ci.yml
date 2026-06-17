@@ -44,6 +44,13 @@ jobs:
         with:
           shared-key: rust-${{ matrix.toolchain }}
 
+      - name: Install CUDA Toolkit
+        uses: Jimver/cuda-toolkit@v0.2.14
+        with:
+          cuda: '12.4.1'
+          method: 'network'
+          sub-packages: '["cublas", "cudart"]'
+
       - name: cargo fmt --check
         run: cargo fmt --all -- --check
 
@@ -103,6 +110,13 @@ jobs:
         with:
           shared-key: tauri-build
           workspaces: 'apps/desktop/src-tauri -> target'
+
+      - name: Install CUDA Toolkit
+        uses: Jimver/cuda-toolkit@v0.2.14
+        with:
+          cuda: '12.4.1'
+          method: 'network'
+          sub-packages: '["cublas", "cudart"]'
 
       - uses: pnpm/action-setup@v4
 

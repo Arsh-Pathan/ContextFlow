@@ -90,7 +90,7 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md) for the full technical design.
 
 ```powershell
 # Clone
-git clone https://github.com/your-org/contextflow.git
+git clone https://github.com/Arsh-Pathan/contextflow.git
 cd contextflow
 
 # Install JavaScript dependencies

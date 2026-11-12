@@ -18,7 +18,22 @@ pub struct WhisperCppProvider {
 
 impl WhisperCppProvider {
     pub fn new(model_path: PathBuf) -> Result<Self, SpeechError> {
-        let params = WhisperContextParameters::default();
+        let mut params = WhisperContextParameters::default();
+
+        // Only attempt GPU offload when the crate was compiled with the
+        // `provider-whisper-cpp-cuda` feature.  Without it the whisper.cpp
+        // build has no CUDA backend and the CUDA DLLs are not linked, so
+        // setting `use_gpu = true` would either be ignored or cause a
+        // load-time DLL error (cublas64_13.dll not found).
+        #[cfg(feature = "provider-whisper-cpp-cuda")]
+        {
+            params.use_gpu(true);
+        }
+        #[cfg(not(feature = "provider-whisper-cpp-cuda"))]
+        {
+            params.use_gpu(false);
+        }
+
         let context = WhisperContext::new_with_params(&model_path.to_string_lossy(), params)
             .map_err(|e| SpeechError::InitFailed(format!("Failed to load Whisper model: {e}")))?;
 

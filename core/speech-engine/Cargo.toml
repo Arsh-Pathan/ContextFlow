@@ -18,6 +18,11 @@ workspace = true
 default = []
 provider-windows         = ["dep:windows"] # Slice 1, in progress
 provider-whisper-cpp     = ["dep:whisper-rs"] # Slice 2
+# Enable CUDA acceleration for the whisper.cpp provider.
+# Only activate this on machines that have the NVIDIA CUDA 12 toolkit
+# installed (cublas64_13.dll / libcublas.so.12 must be present at runtime).
+# Without this flag the CPU backend is used, which works everywhere.
+provider-whisper-cpp-cuda = ["provider-whisper-cpp", "whisper-rs/cuda"]
 provider-faster-whisper  = []              # Slice 2
 provider-deepgram        = []              # Slice 4
 provider-openai-realtime = []              # Slice 4
@@ -34,8 +39,10 @@ tracing     = { workspace = true }
 # Windows provider deps — only pulled in when the feature is on.
 windows = { workspace = true, optional = true }
 
-# Whisper.cpp provider deps
-whisper-rs = { workspace = true, optional = true, features = ["cuda"] }
+# Whisper.cpp provider deps — no "cuda" feature here; use
+# `provider-whisper-cpp-cuda` at the crate-consumer level to opt into
+# GPU acceleration only on machines with CUDA 12 installed.
+whisper-rs = { workspace = true, optional = true }
 
 [dev-dependencies]
 tokio                 = { workspace = true, features = ["macros", "rt-multi-thread", "test-util"] }

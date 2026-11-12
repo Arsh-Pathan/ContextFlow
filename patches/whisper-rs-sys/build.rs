@@ -47,11 +47,25 @@ fn main() {
         println!("cargo:rustc-link-lib=cuda");
         cfg_if::cfg_if! {
             if #[cfg(target_os = "windows")] {
-                if let Ok(cuda_path_str) = env::var("CUDA_PATH") {
-                    let cuda_path = PathBuf::from(cuda_path_str).join("lib/x64");
-                    println!("cargo:rustc-link-search={}", cuda_path.display());
-                } else {
-                    println!("cargo:warning=CUDA_PATH not set, skipping CUDA lib search path");
+                // On Windows the CUDA toolkit installer sets CUDA_PATH.
+                // If it is absent the resulting binary will crash at startup
+                // with "cublas64_13.dll was not found", so we turn the
+                // missing-env-var into a hard build error here rather than
+                // letting it become a silent runtime crash.
+                match env::var("CUDA_PATH") {
+                    Ok(cuda_path_str) => {
+                        let cuda_path = PathBuf::from(cuda_path_str).join("lib/x64");
+                        println!("cargo:rustc-link-search={}", cuda_path.display());
+                    }
+                    Err(_) => {
+                        panic!(
+                            "\n\nContextFlow: the `cuda` feature is enabled but CUDA_PATH is not \
+                             set.\n\
+                             Install the NVIDIA CUDA 12 Toolkit \
+                             (https://developer.nvidia.com/cuda-downloads) or build without the \
+                             `provider-whisper-cpp-cuda` feature to use the CPU backend.\n"
+                        );
+                    }
                 }
             } else {
                 println!("cargo:rustc-link-lib=culibos");
